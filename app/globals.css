@@ -1,0 +1,89 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root { --bg:#0a0a0c; --fg:#f2f2f4; --dim:#8b8b95; --line:#232329; --accent:#7c5cff; }
+
+body {
+  background: var(--bg); color: var(--fg);
+  font: 16px/1.5 ui-sans-serif, system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+button, input { font: inherit; color: inherit; }
+
+/* ---- the feed. This is the entire "Reels feel". ---- */
+.feed { height: 100dvh; overflow-y: scroll; scroll-snap-type: y mandatory; }
+.card {
+  height: 100dvh; scroll-snap-align: start; scroll-snap-stop: always;
+  display: flex; flex-direction: column; justify-content: center;
+  gap: 18px; padding: 28px 24px 92px; max-width: 640px; margin: 0 auto;
+  border-bottom: 1px solid var(--line);
+}
+
+.kicker { font-size: 12px; letter-spacing: .14em; color: var(--accent); font-weight: 700; }
+.card h2 { font-size: clamp(24px, 5vw, 34px); line-height: 1.2; font-weight: 650; letter-spacing: -.02em; }
+.prose { color: #d3d3da; font-size: 18px; }
+.why { color: #d3d3da; border-left: 2px solid var(--accent); padding-left: 12px; }
+.code {
+  font: 15px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace;
+  background: #131318; border: 1px solid var(--line); border-radius: 10px;
+  padding: 14px; overflow-x: auto; white-space: pre;
+}
+
+.options { display: flex; flex-direction: column; gap: 10px; }
+.options.row { flex-direction: row; }
+.opt {
+  flex: 1; display: flex; align-items: center; gap: 12px; text-align: left;
+  background: #131318; border: 1px solid var(--line); border-radius: 12px;
+  padding: 14px 16px; cursor: pointer; transition: border-color .15s, background .15s;
+}
+.opt:hover { border-color: #34343d; }
+.letter { color: var(--dim); font-size: 13px; font-weight: 700; }
+.opt.right { border-color: #2ea043; background: #102417; }
+.opt.wrong { border-color: #d1242f; background: #2a1214; }
+.opt.dim { opacity: .4; }
+.tap {
+  align-self: flex-start; background: none; border: 1px dashed #3a3a44;
+  border-radius: 999px; padding: 10px 18px; color: var(--dim); cursor: pointer;
+}
+.tap:hover { color: var(--fg); border-color: var(--accent); }
+
+.card footer {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  display: flex; align-items: center; gap: 10px;
+  padding: 16px 24px; max-width: 640px; margin: 0 auto;
+}
+.card { position: relative; }
+.card footer button {
+  background: #131318; border: 1px solid var(--line); border-radius: 999px;
+  padding: 8px 14px; font-size: 13px; color: var(--dim); cursor: pointer;
+}
+.card footer button:hover { color: var(--fg); border-color: #34343d; }
+.src { margin-left: auto; font-size: 12px; color: #5b5b66; }
+
+/* ---- home ---- */
+main { max-width: 640px; margin: 0 auto; padding: 32px 24px; }
+.centre { min-height: 100dvh; display: flex; flex-direction: column; justify-content: center; gap: 14px; }
+h1 { font-size: 28px; letter-spacing: -.03em; }
+.tag { color: var(--dim); }
+.bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; }
+.cta { color: var(--accent); text-decoration: none; font-weight: 600; }
+
+form { display: flex; gap: 8px; margin-bottom: 24px; }
+input[type=email], input[name=name] {
+  flex: 1; background: #131318; border: 1px solid var(--line);
+  border-radius: 10px; padding: 12px 14px;
+}
+form button {
+  background: var(--accent); border: 0; border-radius: 10px;
+  padding: 12px 18px; color: #fff; font-weight: 600; cursor: pointer;
+}
+
+.subjects { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+.subjects li {
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px;
+}
+.subjects strong { margin-right: auto; }
+.file, .exam { font-size: 13px; color: var(--dim); cursor: pointer; display: flex; gap: 6px; align-items: center; }
+.file:hover { color: var(--accent); }
+input[type=date] { background: #131318; border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; }
+.progress, .empty { color: var(--dim); margin-top: 20px; }
+.empty { text-align: center; padding: 40vh 24px; }
