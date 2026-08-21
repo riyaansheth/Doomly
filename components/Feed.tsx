@@ -43,7 +43,7 @@ export default function Feed({ initial, sources, subjectIds }:
 
   // Top up before the student hits the bottom, so the scroll never ends.
   const topUp = async (index: number) => {
-    if (loading.current || index < cards.length - 10) return
+    if (loading.current || index < cards.length - 6) return
     loading.current = true
     try {
       const more = await nextCards(db, subjectIds)

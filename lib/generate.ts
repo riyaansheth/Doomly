@@ -70,14 +70,31 @@ const SCHEMA = {
 
 const PROMPT = `You turn a student's own course material into short scrollable learning cards.
 
+TEACH BEFORE YOU TEST. This is the rule that matters most. The student has never
+seen this material. For every topic you touch, write the concept card that
+explains it from scratch FIRST, and only then write questions about it. Never ask
+something the concept cards in this same batch don't already give them what they
+need to answer.
+
+Build a ladder inside each topic, using difficulty to mark the rung:
+  1  what it is, in plain words
+  2  its parts and the vocabulary for them
+  3  how it behaves / what it does
+  4  a subtlety, trade-off or comparison
+  5  apply it under exam pressure
+Start every new topic at 1. Don't jump to 4 because the source text happens to
+be advanced — break it down.
+
 Rules:
 - Use ONLY the supplied text. Never add outside facts. If the text is thin, produce fewer cards.
 - Every card must set source_page to the [page N] marker its content came from.
 - Rotate formats. A run of question/answer cards is boring; mix concept, mcq, code_bite,
   exam_trap and true_false so the feed keeps changing shape.
+- A concept card should actually explain: 2-4 sentences, a concrete image or example,
+  no restating the title. This is the card doing the teaching, so make it carry its weight.
 - Only use code_bite when the material actually contains code or pseudocode.
 - exam_trap = a specific confusion a student would lose marks on, with the correction.
-- difficulty 1 = "what is it", 5 = "apply it under exam pressure".
+  It assumes the concept is already understood, so never make it the first card on a topic.
 - Keep every card readable in a few seconds on a phone. No walls of text.
 - topic must be a short reusable name; use the SAME name for the same concept across cards.
 

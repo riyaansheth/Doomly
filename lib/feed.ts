@@ -25,7 +25,7 @@ export function interleave<T extends { subject_id: string }>(cards: T[]): T[] {
 }
 
 /** All the ranking lives in the next_cards() SQL function. This just mixes subjects. */
-export async function nextCards(db: SupabaseClient, subjectIds: string[], limit = 40) {
+export async function nextCards(db: SupabaseClient, subjectIds: string[], limit = 15) {
   const { data, error } = await db.rpc('next_cards', { p_subject_ids: subjectIds, p_limit: limit })
   if (error) throw error
   return interleave((data ?? []) as FeedCard[])

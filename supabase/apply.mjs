@@ -13,8 +13,22 @@ const sql = readFileSync(new URL('./schema.sql', import.meta.url), 'utf8')
 const client = new Client({ connectionString: url, ssl: { rejectUnauthorized: false } })
 await client.connect()
 
+// Split on semicolons, but never inside a $$-quoted function body — a naive
+// split silently mangles create-function and the change appears to apply.
+function statements(text) {
+  const out = []
+  let buf = '', inBody = false
+  for (const line of text.split('\n')) {
+    buf += line + '\n'
+    if ((line.match(/\$\$/g) || []).length % 2 === 1) inBody = !inBody
+    if (!inBody && line.trim().endsWith(';')) { out.push(buf); buf = '' }
+  }
+  if (buf.trim()) out.push(buf)
+  return out
+}
+
 let applied = 0, existed = 0
-for (const stmt of sql.split(/;\s*\n(?=\s*(?:--|create|alter|insert|drop|with)\b)/i)) {
+for (const stmt of statements(sql)) {
   if (!stmt.replace(/--.*/g, '').trim()) continue
   try { await client.query(stmt); applied++ }
   catch (e) {

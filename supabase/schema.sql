@@ -113,6 +113,25 @@ as $$
   join band b on b.subject_id = c.subject_id
   left join m on m.subject_id = c.subject_id and m.topic = c.topic
   where c.subject_id = any(p_subject_ids)
+    -- Teach before you test. A question about a topic stays hidden until the
+    -- student has actually been shown a concept card for that same topic —
+    -- otherwise the feed quizzes people on things it never explained.
+    and (
+      c.type = 'concept'
+      or exists (
+        select 1 from interactions i2
+        join cards c2 on c2.id = i2.card_id
+        where i2.user_id = auth.uid()
+          and c2.subject_id = c.subject_id
+          and c2.topic = c.topic
+          and c2.type = 'concept'
+      )
+      -- Safety valve: a topic with no concept card at all would be stranded.
+      or not exists (
+        select 1 from cards c3
+        where c3.subject_id = c.subject_id and c3.topic = c.topic and c3.type = 'concept'
+      )
+    )
     -- Crude two-band spaced repetition: a card you got wrong comes back tomorrow,
     -- a card you know stays gone for a month.
     -- ponytail: 2-band cooldown, not SM-2. Upgrade if retention data says it matters.
@@ -127,6 +146,8 @@ as $$
   order by
     -- Bucketed, not raw: raw score would serve 40 cards of one topic in a row.
     floor(coalesce(m.score, 0.5) * 3) asc,
+    -- Within a topic you haven't learned yet, explain first, then ask.
+    case when c.type = 'concept' and coalesce(m.score, 0.5) < 0.6 then 0 else 1 end asc,
     -- Progressive difficulty: aim at 1..5 scaled by mastery.
     abs(c.difficulty - (1 + coalesce(m.score, 0.5) * 4)) asc,
     -- Exam mode: reorder the format mix, don't restrict it.
