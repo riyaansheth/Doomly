@@ -60,12 +60,16 @@ export default function Feed({ initial, sources, subjectIds }:
     <div className="feed">
       {cards.map((c, i) => (
         <section key={c.id} data-id={c.id} data-i={i} className="card">
-          <Card card={c} onAnswer={(correct) => correct !== null && log(c.id, correct ? 'correct' : 'wrong')} />
-          <footer>
-            <button onClick={() => log(c.id, 'saved')}>Save</button>
-            <button onClick={() => log(c.id, 'confused')}>Didn&apos;t get it</button>
-            <span className="src">{sources[c.document_id]} · p.{c.source_page}</span>
-          </footer>
+          <div className="sheet">
+            <div className="sheet-body">
+              <Card card={c} onAnswer={(correct) => correct !== null && log(c.id, correct ? 'correct' : 'wrong')} />
+            </div>
+            <footer>
+              <button onClick={(e) => { log(c.id, 'saved'); e.currentTarget.dataset.on = '1' }}>SAVE</button>
+              <button onClick={(e) => { log(c.id, 'confused'); e.currentTarget.dataset.on = '1' }}>LOST ME</button>
+              <span className="src">{sources[c.document_id]} — p.{c.source_page}</span>
+            </footer>
+          </div>
         </section>
       ))}
     </div>

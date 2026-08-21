@@ -85,7 +85,7 @@ export default function Home() {
     <main>
       <header className="bar">
         <h1>Doomly</h1>
-        <Link className="cta" href="/feed">Start scrolling →</Link>
+        <Link className="cta" href="/feed">START SCROLLING →</Link>
       </header>
 
       <form onSubmit={(e) => {
@@ -93,8 +93,8 @@ export default function Home() {
         const input = (e.target as HTMLFormElement).elements.namedItem('name') as HTMLInputElement
         if (input.value.trim()) { addSubject(input.value.trim()); input.value = '' }
       }}>
-        <input name="name" placeholder="New subject — DSA, CN, OS…" />
-        <button>Add</button>
+        <input name="name" placeholder="NEW SUBJECT — DSA, CN, OS…" />
+        <button>ADD</button>
       </form>
 
       <ul className="subjects">
