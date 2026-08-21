@@ -1,9 +1,5 @@
 import type { Metadata } from 'next'
-import { Nunito, JetBrains_Mono } from 'next/font/google'
 import './globals.css'
-
-const sans = Nunito({ subsets: ['latin'], variable: '--sans' })
-const mono = JetBrains_Mono({ subsets: ['latin'], variable: '--mono' })
 
 export const metadata: Metadata = {
   title: 'Doomly',
@@ -17,8 +13,11 @@ const noFlash = `document.documentElement.dataset.theme =
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${sans.variable} ${mono.variable}`} suppressHydrationWarning>
-      <head><script dangerouslySetInnerHTML={{ __html: noFlash }} /></head>
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+        <script dangerouslySetInnerHTML={{ __html: noFlash }} />
+      </head>
       <body>{children}</body>
     </html>
   )
