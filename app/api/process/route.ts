@@ -23,21 +23,28 @@ export async function POST(req: Request) {
   let pages: string[] = doc.pages
   if (!pages) {
     const { data: file, error: dl } = await db.storage.from('docs').download(doc.storage_path)
-    if (dl || !file) return NextResponse.json({ error: 'download failed' }, { status: 500 })
+    if (dl || !file) return NextResponse.json({ error: `download failed: ${dl?.message}` }, { status: 500 })
     const pdf = await getDocumentProxy(new Uint8Array(await file.arrayBuffer()))
     pages = (await extractText(pdf, { mergePages: false })).text
-    await db.from('documents')
+    const { error: pErr } = await db.from('documents')
       .update({ pages, chunks_total: chunk(pages).length })
       .eq('id', doc.id)
+    if (pErr) return NextResponse.json({ error: `page save failed: ${pErr.message}` }, { status: 500 })
   }
 
   const chunks = chunk(pages)
   const i = doc.chunks_done
   if (i >= chunks.length) return NextResponse.json({ done: true, total: chunks.length, added: 0 })
 
-  const cards = await generateCards(chunks[i])
+  let cards
+  try {
+    cards = await generateCards(chunks[i])
+  } catch (e) {
+    return NextResponse.json({ error: `generation failed: ${(e as Error).message}` }, { status: 500 })
+  }
+
   if (cards.length) {
-    await db.from('cards').insert(
+    const { error: insErr } = await db.from('cards').insert(
       cards.map((c) => ({
         ...c,
         subject_id: doc.subject_id,
@@ -46,8 +53,12 @@ export async function POST(req: Request) {
         source_page: Math.min(Math.max(c.source_page, 1), pages.length),
       })),
     )
+    if (insErr) return NextResponse.json({ error: `card insert failed: ${insErr.message}` }, { status: 500 })
   }
-  await db.from('documents').update({ chunks_done: i + 1 }).eq('id', doc.id)
+
+  // Must succeed, or the browser loop re-runs this same chunk forever.
+  const { error: updErr } = await db.from('documents').update({ chunks_done: i + 1 }).eq('id', doc.id)
+  if (updErr) return NextResponse.json({ error: `progress update failed: ${updErr.message}` }, { status: 500 })
 
   return NextResponse.json({ done: i + 1 >= chunks.length, total: chunks.length, added: cards.length })
 }

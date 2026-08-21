@@ -55,15 +55,29 @@ export default function Home() {
       .select('id').single()
     if (error || !doc) return setProgress(error?.message ?? 'upload failed')
 
-    for (let done = false; !done; ) {
-      const res = await fetch('/api/process', {
-        method: 'POST', headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ documentId: doc.id }),
-      }).then((r) => r.json())
+    setProgress('Reading the PDF…')
+    let cards = 0
+    for (let done = false, n = 0; !done; n++) {
+      let res
+      try {
+        const r = await fetch('/api/process', {
+          method: 'POST', headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ documentId: doc.id }),
+        })
+        res = await r.json()
+      } catch (e) {
+        return setProgress(`Request failed: ${(e as Error).message}`)
+      }
       if (res.error) return setProgress(res.error)
+      // The server only reports done once chunks_done passes the total, so a
+      // stuck counter would otherwise loop here forever.
+      if (n > res.total + 2) return setProgress('Stopped: generation is not advancing.')
+      cards += res.added
       done = res.done
       // Scrollable from the first chunk on — no need to wait for the whole PDF.
-      setProgress(done ? 'Done — go scroll.' : `Generating… ${res.total} chunks, cards are landing already.`)
+      setProgress(done
+        ? `Done — ${cards} cards. Go scroll.`
+        : `Generating… chunk ${n + 1}/${res.total}, ${cards} cards so far. You can start scrolling now.`)
     }
   }
 
