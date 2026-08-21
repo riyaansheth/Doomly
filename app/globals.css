@@ -196,11 +196,31 @@ form button:active { box-shadow: inset 4px 4px 9px var(--lo), inset -4px -4px 9p
 
 .subjects { list-style: none; display: flex; flex-direction: column; gap: 16px; }
 .subjects li {
-  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  display: flex; flex-direction: column; gap: 14px;
   background: var(--bg); border-radius: 24px; padding: 18px 20px;
   box-shadow: 6px 6px 13px var(--lo), -6px -6px 13px var(--hi);
 }
+.subject-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .subjects strong { margin-right: auto; font-size: 17px; font-weight: 800; }
+
+.source { display: flex; gap: 10px; flex-wrap: wrap; margin: 0; }
+.source input[name=src] {
+  flex: 1 1 200px; min-width: 0; background: var(--bg);
+  border-radius: 999px; padding: 12px 18px; font-size: 14px;
+  box-shadow: inset 4px 4px 9px var(--lo), inset -4px -4px 9px var(--hi);
+}
+.source input[name=src]::placeholder { color: var(--soft); }
+.source select {
+  background: var(--bg); color: var(--fg); font-size: 13px; font-weight: 700;
+  border-radius: 999px; padding: 12px 14px; cursor: pointer;
+  box-shadow: inset 4px 4px 9px var(--lo), inset -4px -4px 9px var(--hi);
+}
+.source button {
+  color: var(--accent); font-weight: 800; font-size: 13px; cursor: pointer;
+  background: var(--bg); border-radius: 999px; padding: 12px 20px;
+  box-shadow: 4px 4px 9px var(--lo), -4px -4px 9px var(--hi);
+}
+.source button:active { box-shadow: inset 4px 4px 9px var(--lo), inset -4px -4px 9px var(--hi); }
 .file, .exam { font-size: 12px; font-weight: 700; color: var(--soft); display: flex; gap: 8px; align-items: center; }
 .file {
   cursor: pointer; border-radius: 999px; padding: 10px 16px;

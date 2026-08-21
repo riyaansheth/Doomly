@@ -5,8 +5,14 @@ import ThemeToggle from './ThemeToggle'
 import { browserClient } from '@/lib/supabase'
 import { nextCards, type FeedCard } from '@/lib/feed'
 
+type Source = { label: string; type: string }
+
+// A page number means nothing for a video or a typed topic.
+const cite = (s: Source | undefined, page: number) =>
+  !s ? '' : s.type === 'youtube' ? `${s.label} — ${page}:00` : s.type === 'topic' ? s.label : `${s.label} — p.${page}`
+
 export default function Feed({ initial, sources, subjectIds }:
-  { initial: FeedCard[]; sources: Record<string, string>; subjectIds: string[] }) {
+  { initial: FeedCard[]; sources: Record<string, Source>; subjectIds: string[] }) {
   const [cards, setCards] = useState(initial)
   const db = useRef(browserClient()).current
   const loading = useRef(false)
@@ -69,7 +75,7 @@ export default function Feed({ initial, sources, subjectIds }:
             <footer>
               <button onClick={(e) => { log(c.id, 'saved'); e.currentTarget.dataset.on = '1' }}>Save</button>
               <button onClick={(e) => { log(c.id, 'confused'); e.currentTarget.dataset.on = '1' }}>Lost me</button>
-              <span className="src">{sources[c.document_id]} — p.{c.source_page}</span>
+              <span className="src">{cite(sources[c.document_id], c.source_page)}</span>
             </footer>
           </div>
         </section>

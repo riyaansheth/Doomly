@@ -11,8 +11,11 @@ create table subjects (
 create table documents (
   id uuid primary key default gen_random_uuid(),
   subject_id uuid not null references subjects on delete cascade,
-  filename text not null,
-  storage_path text not null,
+  filename text not null,                  -- display label: file name, video title, or topic
+  source_type text not null default 'pdf' check (source_type in ('pdf','youtube','topic')),
+  source_ref text,                         -- youtube url, or the topic the student typed
+  level int not null default 3 check (level between 1 and 5),
+  storage_path text,                       -- pdf only
   pages jsonb,                             -- string[] per-page text, filled on first process call
   chunks_total int,
   chunks_done int not null default 0,
@@ -86,6 +89,13 @@ insert into storage.buckets (id, name, public) values ('docs', 'docs', false)
 create policy own_files on storage.objects
   for all using (bucket_id = 'docs' and (storage.foldername(name))[1] = auth.uid()::text)
   with check  (bucket_id = 'docs' and (storage.foldername(name))[1] = auth.uid()::text);
+
+-- ------------------------------------------------------- migrations
+-- No-ops on a fresh database; they bring an existing one up to date.
+alter table documents add column if not exists source_type text not null default 'pdf';
+alter table documents add column if not exists source_ref text;
+alter table documents add column if not exists level int not null default 3;
+alter table documents alter column storage_path drop not null;
 
 -- ---------------------------------------------------------------- feed engine
 -- The whole recommender. Ordering only: weakest topic first, difficulty tracking

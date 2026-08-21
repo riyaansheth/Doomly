@@ -14,9 +14,9 @@ export default async function FeedPage() {
 
   const [cards, { data: docs }] = await Promise.all([
     nextCards(db, ids),
-    db.from('documents').select('id,filename'),
+    db.from('documents').select('id,filename,source_type'),
   ])
-  const sources = Object.fromEntries((docs ?? []).map((d) => [d.id, d.filename]))
+  const sources = Object.fromEntries((docs ?? []).map((d) => [d.id, { label: d.filename, type: d.source_type }]))
 
   return <Feed initial={cards} sources={sources} subjectIds={ids} />
 }

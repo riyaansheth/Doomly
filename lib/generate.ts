@@ -26,6 +26,14 @@ export function chunk(pages: string[]): string[] {
   return out
 }
 
+/** A typed topic isn't chunkable, so give the loop four passes over the ladder. */
+export const topicChunks = (topic: string): string[] => [
+  `Topic: ${topic}\n\nCover the foundations: what it is, why it exists, core vocabulary.`,
+  `Topic: ${topic}\n\nCover how it actually works — mechanics, operations, a worked example.`,
+  `Topic: ${topic}\n\nCover trade-offs, comparisons with alternatives, and the mistakes students make.`,
+  `Topic: ${topic}\n\nCover exam-style application: given a scenario, pick and justify the approach.`,
+]
+
 const payloadFor: Record<CardType, string[]> = {
   concept: ['title', 'body'],
   mcq: ['question', 'options', 'answerIndex', 'why'],
@@ -68,7 +76,19 @@ const SCHEMA = {
   }),
 }
 
-const PROMPT = `You turn a student's own course material into short scrollable learning cards.
+// Where a student sits determines which rungs of the ladder are worth their time.
+const BAND: Record<number, string> = { 1: '1-3', 2: '1-3', 3: '2-4', 4: '3-5', 5: '3-5' }
+
+const SOURCE = {
+  grounded: `Use ONLY the supplied text. Never add outside facts. If the text is thin,
+produce fewer cards. Every card must set source_page to the [page N] marker its
+content came from.`,
+  topic: `The student named a topic they want to learn and there is no source
+material. Teach it from your own knowledge and keep it accurate. Set source_page
+to 1 on every card — there is nothing to cite.`,
+}
+
+const prompt = (mode: 'grounded' | 'topic', level: number) => `You turn study material into short scrollable learning cards.
 
 TEACH BEFORE YOU TEST. This is the rule that matters most. The student has never
 seen this material. For every topic you touch, write the concept card that
@@ -82,17 +102,19 @@ Build a ladder inside each topic, using difficulty to mark the rung:
   3  how it behaves / what it does
   4  a subtlety, trade-off or comparison
   5  apply it under exam pressure
-Start every new topic at 1. Don't jump to 4 because the source text happens to
-be advanced — break it down.
+
+This student is at level ${level} of 5, so concentrate on rungs ${BAND[level]}.
+Still open a brand-new topic with a card that explains it — an advanced student
+skimming an unfamiliar topic needs the definition too, just briefly.
+
+${SOURCE[mode]}
 
 Rules:
-- Use ONLY the supplied text. Never add outside facts. If the text is thin, produce fewer cards.
-- Every card must set source_page to the [page N] marker its content came from.
 - Rotate formats. A run of question/answer cards is boring; mix concept, mcq, code_bite,
   exam_trap and true_false so the feed keeps changing shape.
 - A concept card should actually explain: 2-4 sentences, a concrete image or example,
   no restating the title. This is the card doing the teaching, so make it carry its weight.
-- Only use code_bite when the material actually contains code or pseudocode.
+- Only use code_bite when there is real code or pseudocode to show.
 - exam_trap = a specific confusion a student would lose marks on, with the correction.
   It assumes the concept is already understood, so never make it the first card on a topic.
 - Keep every card readable in a few seconds on a phone. No walls of text.
@@ -101,13 +123,16 @@ Rules:
 Produce 6-10 cards.`
 
 /** One chunk in, cards out. Topic and difficulty come back as fields — no second pass. */
-export async function generateCards(text: string): Promise<Card[]> {
+export async function generateCards(
+  text: string,
+  { mode = 'grounded', level = 3 }: { mode?: 'grounded' | 'topic'; level?: number } = {},
+): Promise<Card[]> {
   const client = new OpenAI()
   const res = await client.chat.completions.create({
     model: MODEL,
     response_format: { type: 'json_schema', json_schema: SCHEMA },
     messages: [
-      { role: 'system', content: PROMPT },
+      { role: 'system', content: prompt(mode, level) },
       { role: 'user', content: text },
     ],
   })
