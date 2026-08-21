@@ -16,6 +16,8 @@ export default function Feed({ initial, sources, subjectIds }:
     })
   }, [db])
 
+  const topUpRef = useRef<(i: number) => void>(() => {})
+
   // Dwell time is the strongest free signal we get (§6), so measure it rather
   // than just marking cards seen.
   useEffect(() => {
@@ -23,7 +25,10 @@ export default function Feed({ initial, sources, subjectIds }:
     const io = new IntersectionObserver(
       (entries) => entries.forEach((e) => {
         const id = (e.target as HTMLElement).dataset.id!
-        if (e.isIntersecting) enteredAt.set(id, Date.now())
+        if (e.isIntersecting) {
+          enteredAt.set(id, Date.now())
+          topUpRef.current(Number((e.target as HTMLElement).dataset.i))
+        }
         else if (enteredAt.has(id)) {
           const ms = Date.now() - enteredAt.get(id)!
           enteredAt.delete(id)
@@ -47,12 +52,14 @@ export default function Feed({ initial, sources, subjectIds }:
     } finally { loading.current = false }
   }
 
+  topUpRef.current = topUp
+
   if (!cards.length) return <p className="empty">No cards yet. Upload a PDF and give it a minute.</p>
 
   return (
     <div className="feed">
       {cards.map((c, i) => (
-        <section key={c.id} data-id={c.id} className="card" onMouseEnter={() => topUp(i)}>
+        <section key={c.id} data-id={c.id} data-i={i} className="card">
           <Card card={c} onAnswer={(correct) => correct !== null && log(c.id, correct ? 'correct' : 'wrong')} />
           <footer>
             <button onClick={() => log(c.id, 'saved')}>Save</button>
