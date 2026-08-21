@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node --test test/*.test.ts"
+    "test": "node --test test/*.test.ts",
+    "db:push": "node --env-file-if-exists=.env.local supabase/apply.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.4",
@@ -20,10 +21,12 @@
   },
   "devDependencies": {
     "@types/node": "^20",
+    "@types/pg": "^8.23.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.3.1",
+    "pg": "^8.23.0",
     "typescript": "^5"
   }
 }
