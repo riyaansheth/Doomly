@@ -11,8 +11,8 @@ type Source = { label: string; type: string }
 const cite = (s: Source | undefined, page: number) =>
   !s ? '' : s.type === 'youtube' ? `${s.label} — ${page}:00` : s.type === 'topic' ? s.label : `${s.label} — p.${page}`
 
-export default function Feed({ initial, sources, subjectIds }:
-  { initial: FeedCard[]; sources: Record<string, Source>; subjectIds: string[] }) {
+export default function Feed({ initial, sources, subjectIds, weights }:
+  { initial: FeedCard[]; sources: Record<string, Source>; subjectIds: string[]; weights: Record<string, number> }) {
   const [cards, setCards] = useState(initial)
   const db = useRef(browserClient()).current
   const loading = useRef(false)
@@ -53,7 +53,7 @@ export default function Feed({ initial, sources, subjectIds }:
     if (loading.current || index < cards.length - 6) return
     loading.current = true
     try {
-      const more = await nextCards(db, subjectIds)
+      const more = await nextCards(db, subjectIds, weights)
       const have = new Set(cards.map((c) => c.id))
       setCards((cs) => [...cs, ...more.filter((c) => !have.has(c.id))])
     } finally { loading.current = false }

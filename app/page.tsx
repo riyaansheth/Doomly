@@ -5,7 +5,10 @@ import { browserClient } from '@/lib/supabase'
 import ThemeToggle from '@/components/ThemeToggle'
 import { isYouTube } from '@/lib/youtube'
 
-type Subject = { id: string; name: string; exam_date: string | null }
+type Subject = {
+  id: string; name: string; exam_date: string | null
+  archived: boolean; semester: string | null; order_mode: string
+}
 type NewDoc = { filename: string; source_type: string; source_ref?: string; storage_path?: string; level: number }
 
 const LEVELS = [
@@ -22,7 +25,8 @@ export default function Home() {
   const [authError, setAuthError] = useState('')
 
   const refresh = useCallback(async () => {
-    const { data } = await db.from('subjects').select('id,name,exam_date').order('created_at')
+    const { data } = await db.from('subjects')
+      .select('id,name,exam_date,archived,semester,order_mode').order('created_at')
     setSubjects(data ?? [])
   }, [db])
 
@@ -46,6 +50,11 @@ export default function Home() {
       {authError ? <p className="err">{authError}</p> : <p className="tag">Starting…</p>}
     </main>
   )
+
+  const patch = async (id: string, fields: Partial<Subject>) => {
+    await db.from('subjects').update(fields).eq('id', id)
+    refresh()
+  }
 
   const addSubject = async (name: string) => {
     await db.from('subjects').insert({ name, user_id: user.id })
@@ -98,6 +107,14 @@ export default function Home() {
       ? ingest(subjectId, { filename: 'YouTube video', source_type: 'youtube', source_ref: text, level })
       : ingest(subjectId, { filename: text, source_type: 'topic', source_ref: text, level })
 
+  // Archived subjects sink to their own group so nothing looks deleted.
+  const live = subjects.filter((s) => !s.archived)
+  const groups: [string, Subject[]][] = [
+    ...Map.groupBy(live, (s) => s.semester?.trim() || 'Subjects').entries(),
+  ]
+  const archived = subjects.filter((s) => s.archived)
+  if (archived.length) groups.push(['Archived', archived])
+
   return (
     <main>
       <header className="bar">
@@ -115,45 +132,68 @@ export default function Home() {
         <button>Add</button>
       </form>
 
-      <ul className="subjects">
-        {subjects.map((s) => (
-          <li key={s.id}>
-            <div className="subject-head">
-              <strong>{s.name}</strong>
-              <label className="exam">
-                Exam
-                <input type="date" defaultValue={s.exam_date ?? ''}
-                  onChange={async (e) => {
-                    await db.from('subjects').update({ exam_date: e.target.value || null }).eq('id', s.id)
-                    refresh()
-                  }} />
-              </label>
-            </div>
+      {groups.map(([semester, items]) => (
+        <section key={semester} className="group">
+          {groups.length > 1 && <h2 className="group-name">{semester}</h2>}
+          <ul className="subjects">
+            {items.map((s) => (
+              <li key={s.id}>
+                <div className="subject-head">
+                  {/* Rename in place: blur commits, nothing to open or save. */}
+                  <strong contentEditable suppressContentEditableWarning
+                    onBlur={(e) => {
+                      const name = e.currentTarget.textContent?.trim()
+                      if (name && name !== s.name) patch(s.id, { name })
+                    }}>{s.name}</strong>
+                  <label className="exam">
+                    Exam
+                    <input type="date" defaultValue={s.exam_date ?? ''}
+                      onChange={(e) => patch(s.id, { exam_date: e.target.value || null })} />
+                  </label>
+                </div>
 
-            <form className="source" onSubmit={(e) => {
-              e.preventDefault()
-              const f = e.target as HTMLFormElement
-              const src = f.elements.namedItem('src') as HTMLInputElement
-              const lvl = f.elements.namedItem('level') as HTMLSelectElement
-              if (src.value.trim()) { addSource(s.id, src.value.trim(), Number(lvl.value)); src.value = '' }
-            }}>
-              <input name="src" placeholder="Paste a YouTube link, or type a topic…" />
-              <select name="level" defaultValue={3} aria-label="How well do you know it?">
-                {LEVELS.map((l) => <option key={l.value} value={l.value}>{l.label}</option>)}
-              </select>
-              <button>Add</button>
-              <label className="file">
-                PDF
-                <input type="file" accept="application/pdf" hidden
-                  onChange={(e) => {
-                    const lvl = (e.target.form?.elements.namedItem('level') as HTMLSelectElement)?.value ?? '3'
-                    if (e.target.files?.[0]) uploadPdf(s.id, e.target.files[0], Number(lvl))
-                  }} />
-              </label>
-            </form>
-          </li>
-        ))}
-      </ul>
+                <div className="subject-opts">
+                  <select value={s.order_mode} aria-label="Card order"
+                    onChange={(e) => patch(s.id, { order_mode: e.target.value })}>
+                    <option value="adaptive">Adapt to me</option>
+                    <option value="syllabus">Follow my syllabus</option>
+                  </select>
+                  <input className="sem" defaultValue={s.semester ?? ''} placeholder="Semester"
+                    onBlur={(e) => patch(s.id, { semester: e.target.value.trim() || null })} />
+                  <button className="ghost" onClick={() => patch(s.id, { archived: !s.archived })}>
+                    {s.archived ? 'Restore' : 'Archive'}
+                  </button>
+                </div>
+
+                {!s.archived && (
+                  <form className="source" onSubmit={(e) => {
+                    e.preventDefault()
+                    const f = e.target as HTMLFormElement
+                    const src = f.elements.namedItem('src') as HTMLInputElement
+                    const lvl = f.elements.namedItem('level') as HTMLSelectElement
+                    if (src.value.trim()) { addSource(s.id, src.value.trim(), Number(lvl.value)); src.value = '' }
+                  }}>
+                    <input name="src" placeholder="Paste a YouTube link, or type a topic…" />
+                    <select name="level" defaultValue={3} aria-label="How well do you know it?">
+                      {LEVELS.map((l) => <option key={l.value} value={l.value}>{l.label}</option>)}
+                    </select>
+                    <button>Add</button>
+                    <label className="file">
+                      PDF
+                      <input type="file" accept="application/pdf" hidden
+                        onChange={(e) => {
+                          const lvl = (e.target.form?.elements.namedItem('level') as HTMLSelectElement)?.value ?? '3'
+                          if (e.target.files?.[0]) uploadPdf(s.id, e.target.files[0], Number(lvl))
+                        }} />
+                    </label>
+                  </form>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
+
       {progress && <p className="progress">{progress}</p>}
     </main>
   )
