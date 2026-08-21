@@ -53,6 +53,7 @@ create index on interactions (user_id, card_id);
 alter table subjects  add column if not exists archived boolean not null default false;
 alter table subjects  add column if not exists semester text;
 alter table subjects  add column if not exists order_mode text not null default 'adaptive';
+alter table subjects  add column if not exists exam_time time;   -- null = assume 9am
 alter table documents add column if not exists source_type text not null default 'pdf';
 alter table documents add column if not exists source_ref text;
 alter table documents add column if not exists level int not null default 3;
@@ -117,6 +118,36 @@ create policy own_cards on cards
 
 create policy own_interactions on interactions
   for all using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+-- ---------------------------------------------------------------- push
+create table push_subscriptions (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users on delete cascade,
+  endpoint text not null unique,           -- re-subscribing replaces, never duplicates
+  p256dh text not null,
+  auth text not null,
+  created_at timestamptz default now()
+);
+
+-- One row per reminder actually sent, so a cron that runs twice can't nag twice.
+create table sent_reminders (
+  subject_id uuid not null references subjects on delete cascade,
+  days_out int not null,
+  sent_at timestamptz default now(),
+  primary key (subject_id, days_out)
+);
+
+alter table push_subscriptions enable row level security;
+alter table sent_reminders     enable row level security;
+
+create policy own_push on push_subscriptions
+  for all using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+-- Written only by the cron via the service role, which bypasses RLS. Users get
+-- read access to their own so the UI can show what was already sent.
+create policy own_reminders on sent_reminders
+  for select using (exists (
+    select 1 from subjects s where s.id = subject_id and s.user_id = auth.uid()));
 
 -- Storage: bucket 'docs', each user confined to a folder named by their uid.
 insert into storage.buckets (id, name, public) values ('docs', 'docs', false)

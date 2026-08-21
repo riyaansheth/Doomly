@@ -3,10 +3,13 @@ import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { browserClient } from '@/lib/supabase'
 import ThemeToggle from '@/components/ThemeToggle'
+import Exams from '@/components/Exams'
+import ExamBanner from '@/components/ExamBanner'
+import PushToggle from '@/components/PushToggle'
 import { isYouTube } from '@/lib/youtube'
 
 type Subject = {
-  id: string; name: string; exam_date: string | null
+  id: string; name: string; exam_date: string | null; exam_time: string | null
   archived: boolean; semester: string | null; order_mode: string
 }
 type NewDoc = { filename: string; source_type: string; source_ref?: string; storage_path?: string; level: number }
@@ -26,7 +29,7 @@ export default function Home() {
 
   const refresh = useCallback(async () => {
     const { data } = await db.from('subjects')
-      .select('id,name,exam_date,archived,semester,order_mode').order('created_at')
+      .select('id,name,exam_date,exam_time,archived,semester,order_mode').order('created_at')
     setSubjects(data ?? [])
   }, [db])
 
@@ -94,6 +97,25 @@ export default function Home() {
     }
   }
 
+  const uploadTimetable = async (file: File) => {
+    const path = `${user.id}/${crypto.randomUUID()}.pdf`
+    const { error } = await db.storage.from('docs').upload(path, file)
+    if (error) return setProgress(error.message)
+
+    setProgress('Reading your timetable…')
+    const res = await fetch('/api/timetable', {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ storagePath: path }),
+    }).then((r) => r.json())
+    if (res.error) return setProgress(res.error)
+
+    const bits = [`Found ${res.found} exam${res.found === 1 ? '' : 's'}`]
+    if (res.matched.length) bits.push(`dated ${res.matched.join(', ')}`)
+    if (res.created.length) bits.push(`added ${res.created.join(', ')}`)
+    setProgress(bits.join(' · '))
+    refresh()
+  }
+
   const uploadPdf = async (subjectId: string, file: File, level: number) => {
     const path = `${user.id}/${crypto.randomUUID()}.pdf`
     const { error } = await db.storage.from('docs').upload(path, file)
@@ -106,6 +128,9 @@ export default function Home() {
     isYouTube(text)
       ? ingest(subjectId, { filename: 'YouTube video', source_type: 'youtube', source_ref: text, level })
       : ingest(subjectId, { filename: text, source_type: 'topic', source_ref: text, level })
+
+  // Narrow once here so the exam components can take a plain Exam[].
+  const dated = subjects.filter((s): s is Subject & { exam_date: string } => !!s.exam_date)
 
   // Archived subjects sink to their own group so nothing looks deleted.
   const live = subjects.filter((s) => !s.archived)
@@ -122,6 +147,19 @@ export default function Home() {
         <ThemeToggle />
         <Link className="cta" href="/feed">Start scrolling →</Link>
       </header>
+
+      <ExamBanner exams={dated} />
+
+      <div className="timetable">
+        <label className="file">
+          Upload exam timetable
+          <input type="file" accept="application/pdf" hidden
+            onChange={(e) => e.target.files?.[0] && uploadTimetable(e.target.files[0])} />
+        </label>
+        <PushToggle />
+      </div>
+
+      <Exams exams={dated} />
 
       <form onSubmit={(e) => {
         e.preventDefault()

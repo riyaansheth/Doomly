@@ -69,3 +69,49 @@ test('weighting never drops or duplicates a card', () => {
   assert.equal(out.length, cards.length)
   assert.equal(new Set(out.map((c) => c.n)).size, cards.length)
 })
+
+// ---- calendar ----
+import { ics, googleCalendarUrl, examStart } from '../lib/calendar.ts'
+
+test('a timetable with no time listed is treated as a morning exam', () => {
+  assert.equal(examStart({ name: 'CN', exam_date: '2026-09-17', exam_time: null }).getHours(), 9)
+  assert.equal(examStart({ name: 'CN', exam_date: '2026-09-17', exam_time: '14:30:00' }).getHours(), 14)
+})
+
+test('google calendar link carries a start and an end, not just a date', () => {
+  const url = googleCalendarUrl({ name: 'CN', exam_date: '2026-09-17', exam_time: '09:00' })
+  const [from, to] = new URL(url).searchParams.get('dates')!.split('/')
+  assert.match(from, /^\d{8}T\d{6}$/)
+  assert.ok(to > from, 'exam must end after it starts')
+})
+
+test('exam times are floating, so they read 9am in every timezone', () => {
+  // A trailing Z would pin it to an instant and shift the exam for anyone
+  // whose clock differs from whatever rendered the link.
+  const dates = new URL(googleCalendarUrl({ name: 'CN', exam_date: '2026-09-17', exam_time: '09:00' }))
+    .searchParams.get('dates')!
+  assert.ok(!dates.includes('Z'), 'exam time must not be pinned to UTC')
+  assert.ok(dates.startsWith('20260917T090000'), `expected a 9am start, got ${dates}`)
+})
+
+test('ics emits one VEVENT per exam and stays balanced', () => {
+  const out = ics([
+    { name: 'CN', exam_date: '2026-09-17', exam_time: null },
+    { name: 'DSA', exam_date: '2026-09-21', exam_time: '14:00' },
+  ])
+  assert.equal(out.match(/BEGIN:VEVENT/g)!.length, 2)
+  assert.equal(out.match(/BEGIN:VEVENT/g)!.length, out.match(/END:VEVENT/g)!.length)
+  assert.ok(out.startsWith('BEGIN:VCALENDAR') && out.endsWith('END:VCALENDAR'))
+  assert.ok(out.includes('\r\n'), 'ics requires CRLF line endings')
+})
+
+// ---- timetable ----
+import { matchSubject } from '../lib/timetable.ts'
+
+test('timetable subject names match what the student actually typed', () => {
+  const subjects = [{ id: '1', name: 'CN' }, { id: '2', name: 'DSA' }, { id: '3', name: 'Operating Systems' }]
+  assert.equal(matchSubject('CN', subjects)?.id, '1')
+  assert.equal(matchSubject('Computer Networks', subjects)?.id, '1')   // initialism
+  assert.equal(matchSubject('operating systems', subjects)?.id, '3')   // case
+  assert.equal(matchSubject('Thermodynamics', subjects), undefined)    // no false positive
+})
