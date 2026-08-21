@@ -7,40 +7,34 @@ type Subject = { id: string; name: string; exam_date: string | null }
 
 export default function Home() {
   const [db] = useState(browserClient)
-  const [email, setEmail] = useState('')
-  const [sent, setSent] = useState(false)
   const [user, setUser] = useState<{ id: string } | null>(null)
   const [subjects, setSubjects] = useState<Subject[]>([])
   const [progress, setProgress] = useState('')
   const [authError, setAuthError] = useState('')
-
-  // Surfaced by /auth/callback so a failed sign-in isn't a silent bounce.
-  useEffect(() => setAuthError(new URLSearchParams(location.search).get('authError') ?? ''), [])
 
   const refresh = useCallback(async () => {
     const { data } = await db.from('subjects').select('id,name,exam_date').order('created_at')
     setSubjects(data ?? [])
   }, [db])
 
+  // No login step: an anonymous Supabase user is still a real auth.users row, so
+  // every RLS policy keeps working untouched and there is nothing to sign into.
+  // ponytail: account lives in this browser's cookies. Add email sign-in when you
+  // need the same account on a second device.
   useEffect(() => {
-    db.auth.getUser().then(({ data }) => { setUser(data.user); if (data.user) refresh() })
+    db.auth.getUser().then(async ({ data }) => {
+      const u = data.user ?? (await db.auth.signInAnonymously()).data.user
+      if (!u) return setAuthError('Enable Anonymous sign-ins: Supabase → Authentication → Sign In / Providers')
+      setUser(u)
+      refresh()
+    })
   }, [db, refresh])
 
   if (!user) return (
     <main className="centre">
       <h1>Doomly</h1>
       <p className="tag">Doomscroll your syllabus.</p>
-      {authError && <p className="err">{authError}</p>}
-      {sent ? <p>Check your email for the link.</p> : (
-        <form onSubmit={async (e) => {
-          e.preventDefault()
-          await db.auth.signInWithOtp({ email, options: { emailRedirectTo: `${location.origin}/auth/callback` } })
-          setSent(true)
-        }}>
-          <input type="email" required placeholder="you@college.edu" value={email} onChange={(e) => setEmail(e.target.value)} />
-          <button>Send me a link</button>
-        </form>
-      )}
+      {authError ? <p className="err">{authError}</p> : <p className="tag">Starting…</p>}
     </main>
   )
 
