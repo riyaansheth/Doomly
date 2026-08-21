@@ -87,3 +87,4 @@ form button {
 input[type=date] { background: #131318; border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; }
 .progress, .empty { color: var(--dim); margin-top: 20px; }
 .empty { text-align: center; padding: 40vh 24px; }
+.err { color: #ff6b6b; font-size: 14px; }

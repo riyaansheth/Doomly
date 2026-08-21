@@ -12,6 +12,10 @@ export default function Home() {
   const [user, setUser] = useState<{ id: string } | null>(null)
   const [subjects, setSubjects] = useState<Subject[]>([])
   const [progress, setProgress] = useState('')
+  const [authError, setAuthError] = useState('')
+
+  // Surfaced by /auth/callback so a failed sign-in isn't a silent bounce.
+  useEffect(() => setAuthError(new URLSearchParams(location.search).get('authError') ?? ''), [])
 
   const refresh = useCallback(async () => {
     const { data } = await db.from('subjects').select('id,name,exam_date').order('created_at')
@@ -26,6 +30,7 @@ export default function Home() {
     <main className="centre">
       <h1>Doomly</h1>
       <p className="tag">Doomscroll your syllabus.</p>
+      {authError && <p className="err">{authError}</p>}
       {sent ? <p>Check your email for the link.</p> : (
         <form onSubmit={async (e) => {
           e.preventDefault()
