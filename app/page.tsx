@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { browserClient } from '@/lib/supabase'
+import ThemeToggle from '@/components/ThemeToggle'
 
 type Subject = { id: string; name: string; exam_date: string | null }
 
@@ -85,7 +86,8 @@ export default function Home() {
     <main>
       <header className="bar">
         <h1>Doomly</h1>
-        <Link className="cta" href="/feed">START SCROLLING →</Link>
+        <ThemeToggle />
+        <Link className="cta" href="/feed">Start scrolling →</Link>
       </header>
 
       <form onSubmit={(e) => {
@@ -93,8 +95,8 @@ export default function Home() {
         const input = (e.target as HTMLFormElement).elements.namedItem('name') as HTMLInputElement
         if (input.value.trim()) { addSubject(input.value.trim()); input.value = '' }
       }}>
-        <input name="name" placeholder="NEW SUBJECT — DSA, CN, OS…" />
-        <button>ADD</button>
+        <input name="name" placeholder="New subject — DSA, CN, OS…" />
+        <button>Add</button>
       </form>
 
       <ul className="subjects">

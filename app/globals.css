@@ -1,24 +1,54 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
-:root {
-  --ink:    #0D0D0D;   /* the void the paper sits on */
-  --paper:  #EDE8DA;   /* photocopied handout, not white */
-  --red:    #E5372A;   /* the pen every paper comes back marked in */
-  --yellow: #F5D908;   /* highlighter */
-  --green:  #167A4B;
-  --rule:   #0D0D0D;
-  --bd: 3px;           /* one border weight, everywhere */
+/* Neumorphism = one surface colour everywhere, and shape comes only from a
+   light shadow up-left and a dark shadow down-right. Two shadow tokens do all
+   the work; nothing here has a border. */
+:root[data-theme='light'] {
+  --bg:   #E4E9F2;
+  --hi:   #FFFFFF;
+  --lo:   #B2BCCD;
+  --fg:   #2E3A4D;
+  --soft: #6B7789;
+  --accent: #5B6CF5;
+  --ok:   #21886B;
+  --bad:  #D2473F;
 }
+:root[data-theme='dark'] {
+  --bg:   #292D36;
+  --hi:   #343945;
+  --lo:   #1C1F26;
+  --fg:   #E2E7F0;
+  --soft: #98A2B4;
+  --accent: #8B99FF;
+  --ok:   #4FC49E;
+  --bad:  #FF7A70;
+}
+
+/* raised = it sits on top of the surface. inset = it is pressed into it. */
+.raised   { box-shadow: 6px 6px 12px var(--lo), -6px -6px 12px var(--hi); }
+.inset    { box-shadow: inset 5px 5px 10px var(--lo), inset -5px -5px 10px var(--hi); }
 
 html, body { height: 100%; overflow: hidden; overscroll-behavior: none; }
 body {
-  background: var(--ink); color: var(--paper);
-  font-family: var(--mono), ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 15px; line-height: 1.45;
+  background: var(--bg); color: var(--fg);
+  font-family: var(--sans), ui-sans-serif, system-ui, sans-serif;
+  font-size: 16px; line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  transition: background .25s ease, color .25s ease;
 }
-button, input { font: inherit; color: inherit; }
-:focus-visible { outline: var(--bd) solid var(--yellow); outline-offset: 2px; }
+button, input { font: inherit; color: inherit; background: none; border: 0; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+/* ---- theme toggle: a raised pebble, pressed while held ---- */
+.toggle {
+  width: 42px; height: 42px; flex: none; border-radius: 50%;
+  background: var(--bg); color: var(--soft); font-size: 17px; cursor: pointer;
+  box-shadow: 5px 5px 10px var(--lo), -5px -5px 10px var(--hi);
+  transition: box-shadow .18s ease, color .18s ease;
+}
+.toggle:hover { color: var(--accent); }
+.toggle:active { box-shadow: inset 4px 4px 8px var(--lo), inset -4px -4px 8px var(--hi); }
+.feed .toggle { position: fixed; top: 16px; right: 16px; z-index: 5; }
 
 /* ============================ THE FEED ============================ */
 .feed {
@@ -30,179 +60,163 @@ button, input { font: inherit; color: inherit; }
 .feed::-webkit-scrollbar { display: none; }
 
 .card {
-  position: relative;
-  height: 100dvh; scroll-snap-align: start; scroll-snap-stop: always;
+  position: relative; height: 100dvh;
+  scroll-snap-align: start; scroll-snap-stop: always;
   display: flex; align-items: center; justify-content: center;
-  padding: 20px;
+  padding: 26px 22px;
 }
 
-/* The sheet. Hard shadow, no radius, nothing soft anywhere. */
 .sheet {
   position: relative;
-  width: 100%; max-width: 620px;
-  /* Fill the viewport: a card that floats in dead space doesn't read as a feed. */
-  height: calc(100dvh - 40px);
-  overflow-y: auto; scrollbar-width: none;
-  background: var(--paper); color: var(--ink);
-  border: var(--bd) solid var(--ink);
-  box-shadow: 10px 10px 0 var(--red);
-  padding: 26px 22px 0;
+  width: 100%; max-width: 600px; height: calc(100dvh - 52px);
+  background: var(--bg); border-radius: 34px;
+  box-shadow: 10px 10px 24px var(--lo), -10px -10px 24px var(--hi);
+  padding: 26px 26px 0;
   display: flex; flex-direction: column;
 }
-
-/* Content centres in whatever space the footer leaves. */
 .sheet-body {
   flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: none;
-  display: flex; flex-direction: column; justify-content: center; gap: 16px;
+  display: flex; flex-direction: column; justify-content: center; gap: 18px;
 }
 .sheet-body::-webkit-scrollbar { display: none; }
-.sheet::-webkit-scrollbar { display: none; }
 
-/* Kicker sits ON the top border like a tab clipped to the page. */
 .kicker {
-  position: absolute; top: calc(var(--bd) * -1); left: -3px;
-  background: var(--ink); color: var(--paper);
-  font-size: 11px; font-weight: 700; letter-spacing: .18em;
-  padding: 5px 12px;
+  font-size: 11px; font-weight: 800; letter-spacing: .16em;
+  color: var(--accent); text-transform: uppercase;
 }
-/* Marks stamp — difficulty in the only unit a student actually reads. */
 .marks {
-  position: absolute; top: -3px; right: -3px;
-  background: var(--red); color: var(--paper);
-  font-size: 11px; font-weight: 700; letter-spacing: .1em;
-  padding: 5px 10px;
+  position: absolute; top: 22px; right: 26px;
+  font-size: 10.5px; font-weight: 800; letter-spacing: .1em; color: var(--soft);
+  background: var(--bg); border-radius: 999px; padding: 7px 13px;
+  box-shadow: inset 3px 3px 6px var(--lo), inset -3px -3px 6px var(--hi);
 }
 
 .sheet h2 {
-  font-family: var(--display), Impact, sans-serif;
-  font-size: clamp(26px, 6.4vw, 38px); line-height: 1.06;
-  letter-spacing: -.02em; margin-top: 14px;
+  font-size: clamp(23px, 5.4vw, 31px); font-weight: 800;
+  line-height: 1.2; letter-spacing: -.02em;
 }
-.prose { font-size: 15px; }
+.prose { color: var(--soft); font-size: 16px; }
 .why {
-  border-left: var(--bd) solid var(--red);
-  padding: 2px 0 2px 12px; font-size: 14px;
+  color: var(--soft); font-size: 14.5px;
+  background: var(--bg); border-radius: 18px; padding: 14px 16px;
+  box-shadow: inset 4px 4px 9px var(--lo), inset -4px -4px 9px var(--hi);
 }
 .code {
-  background: var(--ink); color: var(--paper);
-  border: var(--bd) solid var(--ink);
-  padding: 14px; font-size: 13.5px; line-height: 1.6;
+  font-family: var(--mono), ui-monospace, Menlo, monospace;
+  font-size: 13.5px; line-height: 1.65; color: var(--fg);
+  background: var(--bg); border-radius: 18px; padding: 16px;
+  box-shadow: inset 4px 4px 9px var(--lo), inset -4px -4px 9px var(--hi);
   overflow-x: auto; white-space: pre;
 }
 
-/* ---- options ---- */
-.options { display: flex; flex-direction: column; gap: -3px; }
-.options.row { flex-direction: row; gap: 10px; }
+/* ---- options: raised until answered, then pressed in ---- */
+.options { display: flex; flex-direction: column; gap: 12px; }
+.options.row { flex-direction: row; }
 .opt {
-  display: flex; align-items: center; gap: 0; flex: 1;
-  text-align: left; background: var(--paper); color: var(--ink);
-  border: var(--bd) solid var(--ink); margin-bottom: -3px;
-  padding: 0; cursor: pointer; font-size: 14px;
-  transition: background .08s steps(2), color .08s steps(2);
+  display: flex; align-items: center; gap: 14px; flex: 1;
+  text-align: left; cursor: pointer; font-size: 15px; font-weight: 600;
+  background: var(--bg); border-radius: 18px; padding: 14px 16px;
+  box-shadow: 5px 5px 11px var(--lo), -5px -5px 11px var(--hi);
+  transition: box-shadow .18s ease, color .18s ease;
 }
-.options.row .opt { margin-bottom: 0; justify-content: center; padding: 13px; font-weight: 700; }
-.opt:hover { background: var(--ink); color: var(--paper); }
+.options.row .opt { justify-content: center; font-weight: 800; }
+.opt:hover { box-shadow: 3px 3px 7px var(--lo), -3px -3px 7px var(--hi); }
 .letter {
-  align-self: stretch; display: grid; place-items: center;
-  width: 40px; flex: none; background: var(--ink); color: var(--paper);
-  font-weight: 700;
+  display: grid; place-items: center; width: 28px; height: 28px; flex: none;
+  border-radius: 50%; font-size: 12px; font-weight: 800; color: var(--soft);
+  box-shadow: inset 3px 3px 5px var(--lo), inset -3px -3px 5px var(--hi);
 }
-.opt > span:last-child { padding: 12px 14px; }
-.opt.right { background: var(--green); color: var(--paper); }
-.opt.right .letter { background: var(--paper); color: var(--green); }
-.opt.wrong { background: var(--red); color: var(--paper); }
-.opt.wrong .letter { background: var(--paper); color: var(--red); }
-.opt.dim { opacity: .35; }
+.opt.right, .opt.wrong {
+  box-shadow: inset 4px 4px 9px var(--lo), inset -4px -4px 9px var(--hi);
+}
+.opt.right { color: var(--ok); }
+.opt.wrong { color: var(--bad); }
+.opt.right .letter { color: var(--ok); }
+.opt.wrong .letter { color: var(--bad); }
+.opt.dim { opacity: .45; box-shadow: none; }
 .opt:disabled { cursor: default; }
 
 .tap {
-  align-self: flex-start; background: var(--yellow); color: var(--ink);
-  border: var(--bd) solid var(--ink); box-shadow: 5px 5px 0 var(--ink);
-  padding: 11px 18px; font-weight: 700; font-size: 13px;
-  letter-spacing: .08em; cursor: pointer;
+  align-self: flex-start; color: var(--accent); font-weight: 800;
+  font-size: 13px; letter-spacing: .06em; cursor: pointer;
+  background: var(--bg); border-radius: 999px; padding: 13px 24px;
+  box-shadow: 5px 5px 11px var(--lo), -5px -5px 11px var(--hi);
+  transition: box-shadow .18s ease;
 }
-.tap:active { transform: translate(5px, 5px); box-shadow: none; }
+.tap:active { box-shadow: inset 4px 4px 9px var(--lo), inset -4px -4px 9px var(--hi); }
 
-/* ---- card footer: the strip at the bottom of every question paper ---- */
-/* Sticky, so it holds the bottom edge on short cards and stays reachable on long ones. */
 .sheet footer {
-  position: sticky; bottom: 0;
-  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-  background: var(--paper);
-  border-top: var(--bd) solid var(--ink); padding: 12px 0 18px;
+  position: sticky; bottom: 0; background: var(--bg);
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 16px 0 20px;
 }
 .sheet footer button {
-  background: var(--paper); color: var(--ink);
-  border: var(--bd) solid var(--ink);
-  padding: 6px 11px; font-size: 11px; font-weight: 700;
-  letter-spacing: .09em; cursor: pointer;
+  color: var(--soft); font-size: 11.5px; font-weight: 800; letter-spacing: .08em;
+  cursor: pointer; background: var(--bg); border-radius: 999px; padding: 9px 15px;
+  box-shadow: 4px 4px 8px var(--lo), -4px -4px 8px var(--hi);
+  transition: box-shadow .18s ease, color .18s ease;
 }
-.sheet footer button:hover { background: var(--ink); color: var(--paper); }
-.sheet footer button[data-on='1'] { background: var(--yellow); }
-.src {
-  margin-left: auto; font-size: 10.5px; letter-spacing: .04em;
-  text-transform: uppercase; opacity: .65;
+.sheet footer button:hover { color: var(--accent); }
+.sheet footer button[data-on='1'] {
+  color: var(--accent);
+  box-shadow: inset 3px 3px 7px var(--lo), inset -3px -3px 7px var(--hi);
 }
+.src { margin-left: auto; font-size: 10.5px; color: var(--soft); opacity: .8; }
 
 /* ============================ HOME ============================ */
-main { max-width: 620px; margin: 0 auto; padding: 30px 20px 60px; height: 100dvh; overflow-y: auto; overflow-x: hidden; }
+main {
+  max-width: 600px; margin: 0 auto; padding: 28px 22px 60px;
+  height: 100dvh; overflow-y: auto; overflow-x: hidden;
+}
 .centre { min-height: 100dvh; display: flex; flex-direction: column; justify-content: center; gap: 14px; }
 
-h1 {
-  font-family: var(--display), Impact, sans-serif;
-  font-size: 40px; letter-spacing: -.04em; line-height: 1;
-  background: var(--paper); color: var(--ink);
-  display: inline-block; padding: 3px 10px;
-}
-.tag { font-size: 12px; letter-spacing: .16em; text-transform: uppercase; opacity: .7; }
-.bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 26px; }
+h1 { font-size: 30px; font-weight: 800; letter-spacing: -.03em; }
+.tag { color: var(--soft); font-size: 14px; }
+.bar { display: flex; align-items: center; gap: 12px; margin-bottom: 26px; }
+.bar h1 { margin-right: auto; }
 .cta {
-  background: var(--red); color: var(--paper); text-decoration: none;
-  border: var(--bd) solid var(--paper); box-shadow: 4px 4px 0 var(--paper);
-  padding: 11px 14px; font-size: 11px; font-weight: 700; letter-spacing: .08em;
-  white-space: nowrap;
+  color: var(--accent); text-decoration: none; font-weight: 800; font-size: 13px;
+  background: var(--bg); border-radius: 999px; padding: 13px 20px; white-space: nowrap;
+  box-shadow: 5px 5px 11px var(--lo), -5px -5px 11px var(--hi);
 }
-.cta:active { transform: translate(4px, 4px); box-shadow: none; }
+.cta:active { box-shadow: inset 4px 4px 9px var(--lo), inset -4px -4px 9px var(--hi); }
 
-form { display: flex; margin-bottom: 22px; }
+form { display: flex; gap: 12px; margin-bottom: 24px; }
 input[name=name] {
-  flex: 1; background: var(--paper); color: var(--ink);
-  border: var(--bd) solid var(--paper); padding: 12px 14px; min-width: 0;
+  flex: 1; min-width: 0; background: var(--bg); border-radius: 999px; padding: 14px 20px;
+  box-shadow: inset 5px 5px 10px var(--lo), inset -5px -5px 10px var(--hi);
 }
-input[name=name]::placeholder { color: #6b675d; }
+input[name=name]::placeholder { color: var(--soft); }
 form button {
-  background: var(--yellow); color: var(--ink);
-  border: var(--bd) solid var(--paper); border-left: 0;
-  padding: 12px 20px; font-weight: 700; letter-spacing: .1em; cursor: pointer;
+  color: var(--accent); font-weight: 800; font-size: 13px; cursor: pointer;
+  background: var(--bg); border-radius: 999px; padding: 14px 24px;
+  box-shadow: 5px 5px 11px var(--lo), -5px -5px 11px var(--hi);
 }
+form button:active { box-shadow: inset 4px 4px 9px var(--lo), inset -4px -4px 9px var(--hi); }
 
-.subjects { list-style: none; display: flex; flex-direction: column; gap: 12px; }
+.subjects { list-style: none; display: flex; flex-direction: column; gap: 16px; }
 .subjects li {
   display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
-  border: var(--bd) solid var(--paper); padding: 14px;
+  background: var(--bg); border-radius: 24px; padding: 18px 20px;
+  box-shadow: 6px 6px 13px var(--lo), -6px -6px 13px var(--hi);
 }
-.subjects strong {
-  margin-right: auto; font-size: 17px; text-transform: uppercase; letter-spacing: .02em;
-}
-.file, .exam {
-  font-size: 11px; letter-spacing: .1em; text-transform: uppercase;
-  display: flex; gap: 7px; align-items: center;
-}
+.subjects strong { margin-right: auto; font-size: 17px; font-weight: 800; }
+.file, .exam { font-size: 12px; font-weight: 700; color: var(--soft); display: flex; gap: 8px; align-items: center; }
 .file {
-  background: var(--paper); color: var(--ink);
-  border: var(--bd) solid var(--paper); padding: 8px 12px;
-  font-weight: 700; cursor: pointer;
+  cursor: pointer; border-radius: 999px; padding: 10px 16px;
+  box-shadow: 4px 4px 9px var(--lo), -4px -4px 9px var(--hi);
 }
-.file:hover { background: var(--yellow); }
+.file:hover { color: var(--accent); }
 input[type=date] {
-  background: transparent; color: var(--paper);
-  border: var(--bd) solid var(--paper); padding: 6px 8px; font-size: 12px;
+  color: var(--fg); font-size: 12.5px; border-radius: 999px; padding: 9px 14px;
+  box-shadow: inset 3px 3px 7px var(--lo), inset -3px -3px 7px var(--hi);
 }
-.progress, .empty { margin-top: 20px; font-size: 13px; }
-.progress { border-left: var(--bd) solid var(--yellow); padding-left: 12px; }
-.empty { text-align: center; padding: 40vh 20px; }
-.err { color: var(--red); font-size: 13px; border-left: var(--bd) solid var(--red); padding-left: 12px; }
+.progress, .empty, .err { margin-top: 22px; font-size: 14px; }
+.progress {
+  color: var(--soft); background: var(--bg); border-radius: 18px; padding: 14px 18px;
+  box-shadow: inset 4px 4px 9px var(--lo), inset -4px -4px 9px var(--hi);
+}
+.empty { text-align: center; padding: 40vh 22px; color: var(--soft); }
+.err { color: var(--bad); font-weight: 700; }
 
-@media (prefers-reduced-motion: reduce) {
-  * { transition: none !important; animation: none !important; }
-}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }

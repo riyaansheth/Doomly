@@ -1,6 +1,7 @@
 'use client'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Card from './Card'
+import ThemeToggle from './ThemeToggle'
 import { browserClient } from '@/lib/supabase'
 import { nextCards, type FeedCard } from '@/lib/feed'
 
@@ -58,6 +59,7 @@ export default function Feed({ initial, sources, subjectIds }:
 
   return (
     <div className="feed">
+      <ThemeToggle />
       {cards.map((c, i) => (
         <section key={c.id} data-id={c.id} data-i={i} className="card">
           <div className="sheet">
@@ -65,8 +67,8 @@ export default function Feed({ initial, sources, subjectIds }:
               <Card card={c} onAnswer={(correct) => correct !== null && log(c.id, correct ? 'correct' : 'wrong')} />
             </div>
             <footer>
-              <button onClick={(e) => { log(c.id, 'saved'); e.currentTarget.dataset.on = '1' }}>SAVE</button>
-              <button onClick={(e) => { log(c.id, 'confused'); e.currentTarget.dataset.on = '1' }}>LOST ME</button>
+              <button onClick={(e) => { log(c.id, 'saved'); e.currentTarget.dataset.on = '1' }}>Save</button>
+              <button onClick={(e) => { log(c.id, 'confused'); e.currentTarget.dataset.on = '1' }}>Lost me</button>
               <span className="src">{sources[c.document_id]} — p.{c.source_page}</span>
             </footer>
           </div>

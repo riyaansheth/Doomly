@@ -58,7 +58,7 @@ export default function Card({ card, onAnswer }: { card: FeedCard; onAnswer: (co
         <>
           {head('CODE BITE', p.question)}
           <pre className="code">{p.code}</pre>
-          {shown ? <p className="why">{p.answer}</p> : <button className="tap" onClick={reveal}>REVEAL</button>}
+          {shown ? <p className="why">{p.answer}</p> : <button className="tap" onClick={reveal}>Reveal</button>}
         </>
       )
 
@@ -66,7 +66,7 @@ export default function Card({ card, onAnswer }: { card: FeedCard; onAnswer: (co
       return (
         <>
           {head('EXAM TRAP', p.claim)}
-          {shown ? <p className="why">{p.reality}</p> : <button className="tap" onClick={reveal}>WHERE&apos;S THE CATCH?</button>}
+          {shown ? <p className="why">{p.reality}</p> : <button className="tap" onClick={reveal}>Where&apos;s the catch?</button>}
         </>
       )
 
@@ -78,7 +78,7 @@ export default function Card({ card, onAnswer }: { card: FeedCard; onAnswer: (co
             {[true, false].map((v, i) => (
               <button key={i} disabled={picked !== null} className={cls(i, v === p.isTrue)}
                 onClick={() => pick(i, v === p.isTrue)}>
-                {v ? 'TRUE' : 'FALSE'}
+                {v ? 'True' : 'False'}
               </button>
             ))}
           </div>
