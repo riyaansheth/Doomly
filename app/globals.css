@@ -62,15 +62,19 @@ h1 { font-size: 34px; line-height: 1.12; font-weight: 700; letter-spacing: -.025
 }
 .feed::-webkit-scrollbar { display: none; }
 
+:root { --tabbar: calc(52px + env(safe-area-inset-bottom)); }
+
 .card {
   position: relative; height: 100dvh;
   scroll-snap-align: start; scroll-snap-stop: always;
   display: flex; align-items: center; justify-content: center;
-  padding: 74px 16px 16px;
+  /* Bottom padding clears the tab bar; without it the Save / Lost me buttons
+     sit underneath it and are untappable on a phone. */
+  padding: 62px 16px var(--tabbar);
 }
 .sheet {
   position: relative; width: 100%; max-width: 600px;
-  height: calc(100dvh - 96px);
+  height: calc(100dvh - 62px - var(--tabbar) - 8px);
   background: var(--surface); border-radius: 22px;   /* iOS sheet radius */
   padding: 22px 20px 0;
   display: flex; flex-direction: column;
@@ -188,7 +192,7 @@ h1 { font-size: 34px; line-height: 1.12; font-weight: 700; letter-spacing: -.025
 /* ============================ HOME ============================ */
 main {
   max-width: 600px; margin: 0 auto;
-  padding: 20px 16px calc(60px + env(safe-area-inset-bottom));
+  padding: 20px 16px calc(var(--tabbar) + 24px);
   height: 100dvh; overflow-y: auto; overflow-x: hidden;
 }
 .centre { min-height: 100dvh; display: flex; flex-direction: column; justify-content: center; gap: 10px; }
@@ -261,3 +265,80 @@ form button:active, .ghost:active { opacity: .5; }
 .err { color: var(--red); }
 
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+
+/* ============================ TAB BAR ============================ */
+.tabbar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+  display: flex; justify-content: space-around;
+  padding: 6px 4px env(safe-area-inset-bottom);
+  background: var(--material);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+          backdrop-filter: saturate(180%) blur(20px);
+  box-shadow: inset 0 .5px 0 var(--separator);
+}
+.tabbar-item {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px;
+  text-decoration: none; color: var(--label-2);
+  font-size: 10px; letter-spacing: -.005em; padding: 3px 0;
+}
+.tabbar-item.on { color: var(--blue); }
+.tabbar-glyph { font-size: 19px; line-height: 1.05; }
+
+/* ============================ DASHBOARD ============================ */
+.gear { text-decoration: none; font-size: 20px; color: var(--blue); }
+.primary {
+  display: block; text-align: center; text-decoration: none;
+  background: var(--blue); color: #fff; font-size: 17px; font-weight: 600;
+  border-radius: 12px; padding: 15px; margin-top: 22px;
+}
+.primary:active { opacity: .55; }
+
+.stats {
+  list-style: none; display: flex; background: var(--surface);
+  border-radius: 12px; overflow: hidden; margin-bottom: 14px;
+}
+.stats li {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: 16px 8px;
+}
+.stats li + li { box-shadow: inset .5px 0 0 var(--separator); }
+.stats strong { font-size: 24px; font-weight: 700; letter-spacing: -.02em; }
+.stats span { font-size: 12px; color: var(--label-2); }
+
+.weakest {
+  display: flex; align-items: center; gap: 8px; text-decoration: none; color: var(--label);
+  background: var(--surface); border-radius: 12px; padding: 14px 16px; font-size: 15px;
+}
+.weakest strong { font-weight: 600; }
+.weakest .tag { margin-left: auto; }
+
+/* ============================ ROWS & PAGES ============================ */
+.row-link {
+  display: flex; align-items: center; gap: 10px;
+  text-decoration: none; color: var(--label);
+}
+.row-link strong { margin-right: auto; font-size: 17px; font-weight: 500; }
+.chevron { color: var(--label-3); font-size: 20px; line-height: 1; }
+.back { text-decoration: none; color: var(--blue); font-size: 17px; }
+.editable-title {
+  outline: none; margin-bottom: 22px; cursor: text;
+}
+.editable-title:focus { color: var(--blue); }
+.card-block { background: var(--surface); border-radius: 12px; padding: 14px; }
+.card-block.stack { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+.setting { display: flex; align-items: center; gap: 12px; }
+.setting > span:first-child { margin-right: auto; font-size: 17px; }
+.doc-row { display: flex; align-items: center; gap: 10px; }
+.doc-row strong { margin-right: auto; font-size: 15px; font-weight: 500; }
+.empty-inline { color: var(--label-2); font-size: 15px; padding: 6px 2px 2px; }
+.empty-inline a { color: var(--blue); }
+.foot { margin-top: 8px; padding: 0 4px; }
+.foot a { color: var(--blue); }
+
+/* ---- mastery bars ---- */
+.mastery { display: flex; flex-direction: column; gap: 8px; }
+.mastery-head { display: flex; align-items: center; }
+.mastery-head strong { margin-right: auto; font-size: 15px; font-weight: 500; }
+.bar-track { height: 6px; border-radius: 3px; background: var(--fill); overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 3px; background: var(--blue); }
+.bar-fill[data-weak] { background: var(--red); }
