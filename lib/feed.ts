@@ -9,6 +9,7 @@ export type FeedCard = {
   payload: Record<string, unknown>
   source_page: number
   document_id: string
+  brainrot?: { title: string; body: string } | null
 }
 
 /**

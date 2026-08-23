@@ -66,7 +66,8 @@ Source of truth: `supabase/schema.sql`. Apply with `npm run db:push`.
 - `documents` — `source_type` (`pdf` | `youtube` | `topic`), `source_ref`, `level` 1–5,
   `storage_path` (pdf only, nullable), `pages` jsonb, `chunks_total`, `chunks_done`
 - `cards` — `type` (`concept` | `mcq` | `code_bite` | `exam_trap` | `true_false`), `topic`,
-  `difficulty` 1–5, `payload` jsonb (shape varies by type), **`source_page`** (the grounding story)
+  `difficulty` 1–5, `payload` jsonb (shape varies by type), **`source_page`** (the grounding story),
+  `brainrot` jsonb `{title, body}` (null on cards made before the feature)
 - `interactions` — `action` (`seen` | `correct` | `wrong` | `got_it` | `confused` | `saved`), `dwell_ms`
 
 **Views** (all `security_invoker = on`, so RLS applies):
@@ -116,6 +117,9 @@ closing the tab just pauses — reopening resumes from `chunks_done`.
 | **`.ics` + Google Calendar links, not OAuth** | User chose this: no Google Cloud project, no consent screen, no 100-tester cap. Google sends the reminders. |
 | **Floating (non-UTC) calendar times** | An exam is at 9am *where the student is*. Verified identical across 4 timezones. |
 | **Local-midnight range for "today"**, not a UTC day bucket | 2am IST = 20:30 UTC previous day; a UTC boundary would file late-night scrolling under yesterday. |
+| **Brainrot is written in the same generation call**, not a second pass | The toggle is then instant and free. Regenerating on toggle would cost an API call per card. |
+| **Brainrot never touches options, code or answers** | Only prose is retold. And a `true_false` statement is kept verbatim — it *is* the thing being judged, so restating it could flip its truth. Rule lives in `lib/brainrot.ts`, with tests. |
+| **Brainrot state is a cookie, not localStorage** | `/feed` is server-rendered, so the server reads it and the right text ships in the first HTML — no flash, no hydration mismatch. |
 
 ---
 
@@ -212,7 +216,9 @@ for a 2nd device), `supabase/schema.sql` (2-band cooldown → SM-2).
    Every number and every claim about the ranking working predates that fix. This is the
    single most valuable next action, and it may reroute the whole roadmap.
 3. Cards generated before the teach-before-test prompt landed still have an arbitrary
-   difficulty ladder. Re-uploading a PDF regenerates them properly.
+   difficulty ladder. Re-uploading a PDF regenerates them properly. Likewise only 10 of 110
+   cards currently have `brainrot` text — older cards fall back to normal wording, which is
+   handled, but brainrot mode will look half-applied until material is re-ingested.
 4. Two features previously recommended and not yet built: **"Lost me" should regenerate that
    card simpler** (currently it logs a row and the confusing card stays confusing — a dead end
    in the core loop), and **the feed dead-ends** when cards run out because generation only

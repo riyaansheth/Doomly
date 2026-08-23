@@ -10,6 +10,7 @@ export type Card = {
   difficulty: number
   source_page: number
   payload: Record<string, unknown>
+  brainrot?: { title: string; body: string }
 }
 
 /** Split per-page text into chunks, keeping page numbers visible to the model. */
@@ -62,6 +63,10 @@ const SCHEMA = {
         topic: { type: 'string', description: 'Short topic name, e.g. "Stacks". Reuse names across cards.' },
         difficulty: { type: 'integer', minimum: 1, maximum: 5 },
         source_page: { type: 'integer', description: 'The [page N] marker this card came from.' },
+        brainrot: obj({
+          title: { type: 'string', description: 'The headline retold in brainrot voice.' },
+          body: { type: 'string', description: 'The explanation retold in brainrot voice.' },
+        }),
         payload: {
           anyOf: [
             obj({ title: str, body: str }),
@@ -119,6 +124,27 @@ Rules:
   It assumes the concept is already understood, so never make it the first card on a topic.
 - Keep every card readable in a few seconds on a phone. No walls of text.
 - topic must be a short reusable name; use the SAME name for the same concept across cards.
+
+Every card also gets a "brainrot" retelling: the same card as a chronically-online
+narrator would say it out loud over gameplay footage. Commit to the voice — all
+lowercase, short punchy clauses, real internet slang (fr, ngl, lowkey, cooked, ate,
+it's giving, no cap, brb crying), one or two emoji. If it reads like a textbook
+that shortened a sentence, you went nowhere near far enough.
+
+  title  the headline, restated
+  body   the explanation, restated
+
+Example of the register:
+  normal:   "A stack is a Last-In-First-Out data structure."
+  brainrot: "stack is lifo coded 🍽️ last one in is first one out, it's giving pile of plates"
+  normal:   "Stack overflow is not integer overflow."
+  brainrot: "stack overflow ≠ integer overflow, they're not the same and the exam WILL catch you lacking"
+The rules that keep it useful:
+- It must mean EXACTLY the same thing. Slang changes the delivery, never the facts.
+- Never make a wrong statement sound right, or a right one sound wrong.
+- No new claims, no invented examples, no jokes that replace the explanation.
+- Keep it shorter than the original, not longer.
+If a card is a bare definition with nothing to restate, still write it — just plainly.
 
 Produce 6-10 cards.`
 

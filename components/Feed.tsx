@@ -10,8 +10,8 @@ type Source = { label: string; type: string }
 const cite = (s: Source | undefined, page: number) =>
   !s ? '' : s.type === 'youtube' ? `${s.label} — ${page}:00` : s.type === 'topic' ? s.label : `${s.label} — p.${page}`
 
-export default function Feed({ initial, sources, subjectIds, weights }:
-  { initial: FeedCard[]; sources: Record<string, Source>; subjectIds: string[]; weights: Record<string, number> }) {
+export default function Feed({ initial, sources, subjectIds, weights, brainrot }:
+  { initial: FeedCard[]; sources: Record<string, Source>; subjectIds: string[]; weights: Record<string, number>; brainrot?: boolean }) {
   const [cards, setCards] = useState(initial)
   const db = useRef(browserClient()).current
   const loading = useRef(false)
@@ -81,7 +81,7 @@ export default function Feed({ initial, sources, subjectIds, weights }:
         <section key={c.id} data-id={c.id} data-i={i} className="card">
           <div className="sheet">
             <div className="sheet-body">
-              <Card card={c} onAnswer={(correct) => correct !== null && log(c.id, correct ? 'correct' : 'wrong')} />
+              <Card card={c} brainrot={brainrot} onAnswer={(correct) => correct !== null && log(c.id, correct ? 'correct' : 'wrong')} />
             </div>
             <footer>
               <button onClick={(e) => { log(c.id, 'saved'); e.currentTarget.dataset.on = '1' }}>Save</button>

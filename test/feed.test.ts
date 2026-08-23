@@ -115,3 +115,28 @@ test('timetable subject names match what the student actually typed', () => {
   assert.equal(matchSubject('operating systems', subjects)?.id, '3')   // case
   assert.equal(matchSubject('Thermodynamics', subjects), undefined)    // no false positive
 })
+
+// ---- brainrot ----
+import { retell } from '../lib/brainrot.ts'
+
+const br = { title: 'stack = pile of plates fr', body: 'last one on is first one out, no cap' }
+
+test('brainrot off shows the real text', () => {
+  assert.deepEqual(retell(false, 'concept', br, 'A stack', 'LIFO.'), { title: 'A stack', body: 'LIFO.' })
+})
+
+test('brainrot on retells both parts', () => {
+  assert.deepEqual(retell(true, 'concept', br, 'A stack', 'LIFO.'), { title: br.title, body: br.body })
+})
+
+test('a true/false statement is never restated, only its explanation', () => {
+  // Restating the statement could flip what the student is judging.
+  const out = retell(true, 'true_false', br, 'Every BST is balanced', 'No — insert in order.')
+  assert.equal(out.title, 'Every BST is balanced')
+  assert.equal(out.body, br.body)
+})
+
+test('cards generated before brainrot existed fall back cleanly', () => {
+  assert.deepEqual(retell(true, 'concept', null, 'A stack', 'LIFO.'), { title: 'A stack', body: 'LIFO.' })
+  assert.deepEqual(retell(true, 'mcq', undefined, 'Which is LIFO?'), { title: 'Which is LIFO?', body: undefined })
+})

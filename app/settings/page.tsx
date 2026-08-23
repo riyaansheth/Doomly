@@ -2,6 +2,7 @@
 import { useSession } from '@/lib/session'
 import ThemeToggle from '@/components/ThemeToggle'
 import PushToggle from '@/components/PushToggle'
+import BrainrotToggle from '@/components/BrainrotToggle'
 
 export default function Settings() {
   const { user } = useSession()
@@ -14,7 +15,12 @@ export default function Settings() {
         <h2 className="group-name">Appearance</h2>
         <ul className="subjects">
           <li className="setting"><span>Theme</span><ThemeToggle /></li>
+          <li className="setting"><span>Brainrot mode</span><BrainrotToggle /></li>
         </ul>
+        <p className="tag foot">
+          Same cards, told like a chronically-online narrator. Questions, options and code
+          stay exactly as they are — only the wording around them changes.
+        </p>
       </section>
 
       <section className="group">

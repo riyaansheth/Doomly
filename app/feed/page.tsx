@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { cookies } from 'next/headers'
 import { serverClient } from '@/lib/supabase-server'
 import { nextCards } from '@/lib/feed'
 import Feed from '@/components/Feed'
@@ -15,6 +16,7 @@ export default async function FeedPage({ searchParams }: { searchParams: Promise
   if (!all.length) return <main className="centre"><p>Add a subject first.</p><Link href="/">Home</Link></main>
 
   // Fall back to For You rather than silently serving an empty feed for a bad id.
+  const brainrot = (await cookies()).get('brainrot')?.value === '1'
   const wanted = (await searchParams).s
   const active = all.some((s) => s.id === wanted) ? wanted : undefined
   const ids = active ? [active] : all.map((s) => s.id)
@@ -32,7 +34,7 @@ export default async function FeedPage({ searchParams }: { searchParams: Promise
       <FeedTabs subjects={all} active={active} />
       {/* key forces a remount per tab: Feed seeds useState from `initial`, and a
           client-side nav would otherwise reuse the old instance and its old cards. */}
-      <Feed key={active ?? 'all'} initial={cards} sources={sources} subjectIds={ids} weights={weights} />
+      <Feed key={active ?? 'all'} initial={cards} sources={sources} subjectIds={ids} weights={weights} brainrot={brainrot} />
     </>
   )
 }

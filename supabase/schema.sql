@@ -33,6 +33,7 @@ create table cards (
   topic text not null,
   difficulty int not null check (difficulty between 1 and 5),
   payload jsonb not null,                  -- shape varies by type
+  brainrot jsonb,                          -- {title, body} slang retelling; null on older cards
   source_page int not null,                -- grounding: every card traces back to a page
   created_at timestamptz default now()
 );
@@ -54,6 +55,7 @@ alter table subjects  add column if not exists archived boolean not null default
 alter table subjects  add column if not exists semester text;
 alter table subjects  add column if not exists order_mode text not null default 'adaptive';
 alter table subjects  add column if not exists exam_time time;   -- null = assume 9am
+alter table cards     add column if not exists brainrot jsonb;
 alter table documents add column if not exists source_type text not null default 'pdf';
 alter table documents add column if not exists source_ref text;
 alter table documents add column if not exists level int not null default 3;
