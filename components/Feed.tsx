@@ -1,7 +1,6 @@
 'use client'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Card from './Card'
-import ThemeToggle from './ThemeToggle'
 import { browserClient } from '@/lib/supabase'
 import { nextCards, type FeedCard } from '@/lib/feed'
 
@@ -78,7 +77,6 @@ export default function Feed({ initial, sources, subjectIds, weights }:
 
   return (
     <div className="feed">
-      <ThemeToggle />
       {cards.map((c, i) => (
         <section key={c.id} data-id={c.id} data-i={i} className="card">
           <div className="sheet">

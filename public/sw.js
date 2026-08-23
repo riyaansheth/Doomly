@@ -4,8 +4,8 @@ self.addEventListener('push', (event) => {
   event.waitUntil(
     self.registration.showNotification(d.title || 'Doomly', {
       body: d.body || '',
-      icon: '/icon.png',
-      badge: '/icon.png',
+      icon: '/icon-192.png',
+      badge: '/icon-192.png',
       tag: d.tag,              // same tag replaces rather than stacks
       data: { url: d.url || '/feed' },
     }),

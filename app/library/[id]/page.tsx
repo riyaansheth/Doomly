@@ -107,7 +107,7 @@ export default function SubjectPage({ params }: { params: Promise<{ id: string }
               onBlur={(e) => patch(subject.id, { semester: e.target.value.trim() || null })} />
           </li>
           <li className="setting">
-            <span>{subject.archived ? 'Archived' : 'Archive'}</span>
+            <span>{subject.archived ? 'Hidden from your feed' : 'Showing in your feed'}</span>
             <button className="ghost" onClick={async () => {
               await patch(subject.id, { archived: !subject.archived })
               refresh()
