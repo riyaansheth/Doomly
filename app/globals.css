@@ -385,3 +385,10 @@ form button:active, .ghost:active { opacity: .5; }
   transition: transform .2s ease;
 }
 .switch.on .switch-knob { transform: translateX(20px); }
+
+.danger {
+  color: var(--red); font-size: 15px; font-weight: 600; cursor: pointer;
+  background: var(--fill); border-radius: 10px; padding: 11px 16px; min-height: 44px;
+}
+.danger:active { opacity: .5; }
+.doc-row .danger { font-size: 14px; padding: 9px 13px; }

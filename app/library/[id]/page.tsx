@@ -5,7 +5,12 @@ import { useRouter } from 'next/navigation'
 import { useSession } from '@/lib/session'
 import { LEVELS, addSource, uploadPdf } from '@/lib/ingest'
 
-type Doc = { id: string; filename: string; source_type: string; chunks_done: number; chunks_total: number | null }
+type Doc = {
+  id: string; filename: string; source_type: string
+  chunks_done: number; chunks_total: number | null
+  storage_path: string | null
+  cards: { count: number }[]
+}
 
 export default function SubjectPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
@@ -23,12 +28,46 @@ export default function SubjectPage({ params }: { params: Promise<{ id: string }
 
   useEffect(() => {
     if (!user) return
-    db.from('documents').select('id,filename,source_type,chunks_done,chunks_total')
+    // cards(count) so the delete confirmation can state what actually goes.
+    db.from('documents').select('id,filename,source_type,chunks_done,chunks_total,storage_path,cards(count)')
       .eq('subject_id', id).order('created_at')
-      .then(({ data }) => setDocs((data ?? []) as Doc[]))
+      .then(({ data }) => setDocs((data ?? []) as unknown as Doc[]))
   }, [db, user, id, progress])
 
   if (!subject) return <main><p className="tag">Loading…</p></main>
+
+  // Cards cascade from documents, and interactions cascade from cards — so
+  // deleting material also throws away the mastery built on it. Say so plainly.
+  const removeDoc = async (d: Doc) => {
+    const cards = d.cards?.[0]?.count ?? 0
+    const ok = confirm(
+      `Delete "${d.filename}"?\n\n` +
+      `${cards} card${cards === 1 ? '' : 's'} made from it will go too, along with your ` +
+      `progress on them. This can't be undone.`,
+    )
+    if (!ok) return
+    // Storage first: deleting the row loses the path, which would orphan the file.
+    if (d.storage_path) await db.storage.from('docs').remove([d.storage_path])
+    const { error } = await db.from('documents').delete().eq('id', d.id)
+    setProgress(error ? error.message : `Deleted ${d.filename}.`)
+  }
+
+  const removeSubject = async () => {
+    const cards = docs.reduce((n, d) => n + (d.cards?.[0]?.count ?? 0), 0)
+    const ok = confirm(
+      `Delete the subject "${subject.name}"?\n\n` +
+      `${docs.length} source${docs.length === 1 ? '' : 's'} and ${cards} card${cards === 1 ? '' : 's'} ` +
+      `will be deleted, along with all your progress in this subject. This can't be undone.\n\n` +
+      `To just hide it from your feed, use Archive instead.`,
+    )
+    if (!ok) return
+    const paths = docs.map((d) => d.storage_path).filter(Boolean) as string[]
+    if (paths.length) await db.storage.from('docs').remove(paths)
+    const { error } = await db.from('subjects').delete().eq('id', subject.id)
+    if (error) return setProgress(error.message)
+    await refresh()
+    router.replace('/library')
+  }
 
   return (
     <main>
@@ -78,8 +117,10 @@ export default function SubjectPage({ params }: { params: Promise<{ id: string }
                 <span className="tag">
                   {d.chunks_total && d.chunks_done < d.chunks_total
                     ? `${d.chunks_done}/${d.chunks_total}`
-                    : d.source_type}
+                    : `${d.cards?.[0]?.count ?? 0} cards`}
                 </span>
+                <button className="danger" onClick={() => removeDoc(d)}
+                  aria-label={`Delete ${d.filename}`}>Delete</button>
               </li>
             ))}
           </ul>
@@ -112,6 +153,16 @@ export default function SubjectPage({ params }: { params: Promise<{ id: string }
               await patch(subject.id, { archived: !subject.archived })
               refresh()
             }}>{subject.archived ? 'Restore' : 'Archive'}</button>
+          </li>
+        </ul>
+        <p className="tag foot">Archiving hides a subject and keeps everything in it.</p>
+      </section>
+
+      <section className="group">
+        <ul className="subjects">
+          <li className="setting">
+            <span>Delete this subject</span>
+            <button className="danger" onClick={removeSubject}>Delete</button>
           </li>
         </ul>
       </section>
