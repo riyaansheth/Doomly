@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   description: 'Doomscroll your syllabus.',
   manifest: '/manifest.webmanifest',
   appleWebApp: { capable: true, title: 'Doomly', statusBarStyle: 'black-translucent' },
-  icons: { apple: '/apple-touch-icon.png', icon: '/icon-192.png' },
+  icons: { apple: '/apple-touch-icon.png', icon: '/favicon.png' },
 }
 
 export const viewport: Viewport = {
