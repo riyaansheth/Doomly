@@ -140,3 +140,11 @@ test('cards generated before brainrot existed fall back cleanly', () => {
   assert.deepEqual(retell(true, 'concept', null, 'A stack', 'LIFO.'), { title: 'A stack', body: 'LIFO.' })
   assert.deepEqual(retell(true, 'mcq', undefined, 'Which is LIFO?'), { title: 'Which is LIFO?', body: undefined })
 })
+
+test('calendar events link to the deployed site, not whatever host built them', () => {
+  // A link to localhost inside someone's calendar is dead the moment they leave the laptop.
+  const e = { name: 'CN', exam_date: '2026-09-17', exam_time: null }
+  assert.ok(!googleCalendarUrl(e).includes('localhost'), 'google link points at localhost')
+  assert.ok(!ics([e]).includes('localhost'), 'ics points at localhost')
+  assert.match(ics([e]), /DESCRIPTION:.*https?:\/\//)
+})

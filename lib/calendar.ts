@@ -3,6 +3,10 @@ export type Exam = { name: string; exam_date: string; exam_time: string | null }
 const EXAM_MINUTES = 180        // 3h is the usual university slot
 const DEFAULT_TIME = '09:00'
 
+// Calendar events outlive the session that made them, so the link inside one
+// must point at the deployed site, never at whatever host generated it.
+const SITE = process.env.NEXT_PUBLIC_SITE_URL || 'https://riyaansheth.tech'
+
 /** Exam start as a real instant, in whatever timezone the caller is in. */
 export const examStart = (e: Exam) => new Date(`${e.exam_date}T${(e.exam_time ?? DEFAULT_TIME).slice(0, 5)}:00`)
 
@@ -31,7 +35,7 @@ export function googleCalendarUrl(e: Exam) {
     action: 'TEMPLATE',
     text: `${e.name} exam`,
     dates: window(e),
-    details: 'Added by Doomly. Revise: http://localhost:3000/feed',
+    details: `Added by Doomly. Revise: ${SITE}/feed`,
   })
   return `https://calendar.google.com/calendar/render?${q}`
 }
@@ -47,6 +51,7 @@ export function ics(exams: Exam[]) {
       `DTSTART:${window(e).split('/')[0]}`,
       `DTEND:${window(e).split('/')[1]}`,
       `SUMMARY:${e.name} exam`,
+      `DESCRIPTION:Added by Doomly. Revise: ${SITE}/feed`,
       'BEGIN:VALARM', 'TRIGGER:-P1D', 'ACTION:DISPLAY', 'DESCRIPTION:Exam tomorrow', 'END:VALARM',
       'END:VEVENT',
     ]),

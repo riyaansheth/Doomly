@@ -28,7 +28,7 @@ product; the AI is infrastructure.
 | DB / auth / storage | Supabase, project ref **`ofmwcufhxcwmggnjdrel`**, org `dizrupt`, free tier |
 | LLM | **OpenAI** (user's explicit choice — do not switch to Anthropic), model via `OPENAI_MODEL`, currently `gpt-5` |
 | Push | `web-push` + VAPID + a service worker |
-| Deploy | **not deployed yet.** `vercel.json` has a daily cron ready for `/api/notify`. |
+| Deploy | **not deployed yet.** Target domain **riyaansheth.tech** via Vercel — see §11a. |
 
 Runs locally at `http://localhost:3000`, LAN `http://192.168.1.4:3000`.
 
@@ -205,6 +205,39 @@ Deferred shortcuts are marked `ponytail:` in code — currently 4:
 `app/api/process/route.ts` (browser work loop → real queue), `lib/youtube.ts` (caption
 scraping breaks if YouTube changes), `lib/session.ts` (cookie-bound account → email sign-in
 for a 2nd device), `supabase/schema.sql` (2-band cooldown → SM-2).
+
+---
+
+## 11a. Deploying to riyaansheth.tech
+
+Not deployed yet. `vercel.json` already declares a daily cron for `/api/notify`.
+
+**Env vars to set on Vercel** (Production + Preview). `DATABASE_URL` is deliberately NOT in
+this list — it is only used by `npm run db:push` locally, so it never needs to leave the laptop.
+
+```
+NEXT_PUBLIC_SUPABASE_URL          same as local
+NEXT_PUBLIC_SUPABASE_ANON_KEY     same as local (publishable key)
+NEXT_PUBLIC_SITE_URL              https://riyaansheth.tech
+OPENAI_API_KEY                    required — the SDK reads it implicitly, so it does
+                                  not appear in a grep for process.env
+OPENAI_MODEL                      gpt-5
+NEXT_PUBLIC_VAPID_PUBLIC_KEY      same as local
+VAPID_PRIVATE_KEY                 same as local
+SUPABASE_SECRET_KEY               STILL EMPTY — get from Supabase → Settings → API →
+                                  Secret keys. /api/notify 500s without it.
+CRON_SECRET                       same as local. Vercel automatically sends it as
+                                  `Authorization: Bearer $CRON_SECRET` to cron routes.
+```
+
+**Steps**
+1. `vercel login` (interactive), then `vercel link` and `vercel --prod`
+2. Add the env vars above, then redeploy so they take effect
+3. `vercel domains add riyaansheth.tech`, then set the DNS records Vercel prints at the registrar
+4. Nothing to change in Supabase — anonymous auth uses no redirect URLs
+
+**What only starts working once it's on HTTPS:** Add to Home Screen, and web push (iOS
+delivers push only to home-screen-installed sites). Both are inert on `http://localhost`.
 
 ---
 
