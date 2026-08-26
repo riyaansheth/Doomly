@@ -23,10 +23,13 @@ export function useSession() {
   const [user, setUser] = useState<{ id: string } | null>(null)
   const [subjects, setSubjects] = useState<Subject[]>([])
   const [error, setError] = useState('')
+  // Distinct from "has subjects": an empty library is a loaded library.
+  const [ready, setReady] = useState(false)
 
   const refresh = useCallback(async () => {
     const { data } = await db.from('subjects').select(COLUMNS).order('created_at')
     setSubjects((data ?? []) as Subject[])
+    setReady(true)
   }, [db])
 
   useEffect(() => {
@@ -43,7 +46,7 @@ export function useSession() {
     refresh()
   }
 
-  return { db, user, subjects, error, refresh, patch }
+  return { db, user, subjects, error, ready, refresh, patch }
 }
 
 /** Subjects that actually have an exam on the calendar. */

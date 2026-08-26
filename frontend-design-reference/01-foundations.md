@@ -77,6 +77,14 @@ one thing; 34px next to 13px reads as two.
 | Footnote | 13px | 400 | −.005em | `.tag`, captions, helper text |
 | Caption | 12px | 600 | — | marks pill, source citation |
 | Section header | 13px | 400 | +.04em, uppercase | `.group-name` above a list |
+| Tab bar label | 10px | 400 | −.005em | `.tabbar-item` |
+
+**14px is not on this scale.** iOS goes 15 (Subhead) → 13 (Footnote) with nothing between,
+and five stray 14px values were migrated to 15 or 13 to match. The one survivor is `.code`,
+which stays 14px because monospace reads optically larger at the same size.
+
+Sizes outside the text ramp, because they are objects rather than type: `.tabbar-glyph`
+19px, `.gear` and `.chevron` 20px, `.stats strong` 24px.
 
 **Negative tracking above 20px is what makes it look like SF and not Helvetica.** Large
 text set at default tracking reads loose and generic.
@@ -118,8 +126,14 @@ so the phone layout is the true layout and desktop is the same column with more 
 | `10px` | inputs and buttons that sit directly on the page background |
 | `8px` | small inline controls inside a settings row |
 | `50%` | circles — the option letter, the theme toggle |
+| `9px` / `7px` | the segmented control and its thumb — iOS's own values, kept as a pair |
+| `3px` | the mastery progress bar |
 
 **Nothing is square.** A 0px radius is a deliberate departure and needs a reason.
+
+**Two raw colours exist on purpose**, both `#fff`: the switch knob and the text on a
+filled blue button. Neither flips with theme — an iOS toggle knob is white on both — so a
+token would be a lie.
 
 ---
 

@@ -27,21 +27,29 @@ background: var(--blue); color: #fff
 ```
 Used for: *Reveal*, *Where's the catch?*
 
-### `.ghost` / `.file` — recessed capsule
-Secondary actions. Blue text on `--fill`, never a border.
+### `.ghost` — recessed control
+Every secondary action. **One rule serves them all** — `.ghost`, `.file`, `.danger`,
+`form button`, `.source button` and `.sheet footer button` share a single declaration, and
+only colour or radius varies:
+```css
+.ghost, .file, .danger, form button, .source button, .sheet footer button {
+  background: var(--fill); color: var(--blue);
+  font-size: 16px; font-weight: 600; border-radius: 10px;
+  padding: 11px 16px; min-height: 44px;
+}
+.danger { color: var(--red); }
+.sheet footer button { border-radius: 999px; }
 ```
-background: var(--fill); color: var(--blue)
-16px / 600 · radius 10px · padding 12px 16px · min-height 44px
-```
-`.file` is the same thing wrapping a hidden `<input type="file">` — the native control is
-never shown.
+These were five near-identical rules until they were merged. Add the class to that
+selector list rather than writing a sixth — duplicated declarations are how a system
+drifts apart one padding value at a time.
+
+`.file` adds only `display: flex; gap: 7px` because it wraps a hidden
+`<input type="file">`; the native control is never shown.
 
 ### `.danger` — destructive
-Identical geometry to `.ghost`, red text. **Text only turns red; the background stays
-`--fill`.** A solid red button is louder than anything in this app needs to be.
-```
-background: var(--fill); color: var(--red) · 15px / 600 · min-height 44px
-```
+`.ghost` with red text. **Only the text turns red; the background stays `--fill`.** A
+solid red button is louder than anything in this app needs to be.
 
 ### Text-only links
 `.cta` (17px/600) and `.back` (17px, with a `‹` prefix) — bare blue text, no background.

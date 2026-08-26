@@ -14,13 +14,15 @@ type Doc = {
 
 export default function SubjectPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
-  const { db, user, subjects, patch, refresh } = useSession()
+  const { db, user, subjects, patch, refresh, ready } = useSession()
   const [docs, setDocs] = useState<Doc[]>([])
   const [progress, setProgress] = useState('')
   const router = useRouter()
 
   const subject = subjects.find((s) => s.id === id)
-  const loaded = !!user && !!subjects.length
+  // `subjects.length` would never become truthy for someone with none, leaving
+  // them on "Loading…" forever instead of being sent back.
+  const loaded = ready
 
   // An id that isn't theirs (or no longer exists) goes back to the list rather
   // than rendering a blank page.
@@ -34,7 +36,7 @@ export default function SubjectPage({ params }: { params: Promise<{ id: string }
       .then(({ data }) => setDocs((data ?? []) as unknown as Doc[]))
   }, [db, user, id, progress])
 
-  if (!subject) return <main><p className="tag">Loading…</p></main>
+  if (!subject) return <main><p className="tag">{ready ? 'Taking you back…' : 'Loading…'}</p></main>
 
   // Cards cascade from documents, and interactions cascade from cards — so
   // deleting material also throws away the mastery built on it. Say so plainly.
