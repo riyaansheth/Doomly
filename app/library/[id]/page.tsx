@@ -88,12 +88,12 @@ export default function SubjectPage({ params }: { params: Promise<{ id: string }
         const f = e.target as HTMLFormElement
         const src = f.elements.namedItem('src') as HTMLInputElement
         const lvl = f.elements.namedItem('level') as HTMLSelectElement
-        if (src.value.trim()) {
-          addSource(db, subject.id, src.value.trim(), Number(lvl.value), setProgress)
-          src.value = ''
-        }
+        const text = src.value.trim()
+        if (!text) return src.reportValidity()
+        addSource(db, subject.id, text, Number(lvl.value), setProgress)
+        src.value = ''
       }}>
-        <input name="src" placeholder="Paste a YouTube link, or type a topic…" />
+        <input name="src" required placeholder="Paste a YouTube link, or type a topic…" />
         <select name="level" defaultValue={3} aria-label="How well do you know it?">
           {LEVELS.map((l) => <option key={l.value} value={l.value}>{l.label}</option>)}
         </select>

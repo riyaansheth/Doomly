@@ -6,6 +6,7 @@ import { useSession, withAuthRetry, type Subject } from '@/lib/session'
 export default function Library() {
   const { db, user, subjects, error, setError, refresh } = useSession()
   const [adding, setAdding] = useState(false)
+  const [note, setNote] = useState('')
 
   if (!user) return <main><p className="tag">{error || 'Starting…'}</p></main>
 
@@ -16,7 +17,8 @@ export default function Library() {
     setAdding(false)
     if (e) return setError(`Couldn't add "${name}": ${e.message}`)
     setError('')
-    refresh()
+    await refresh()
+    setNote(`Added ${name}.`)
   }
 
   // Archived subjects sink to their own group so nothing looks deleted.
@@ -35,11 +37,14 @@ export default function Library() {
       <form onSubmit={(e) => {
         e.preventDefault()
         const input = (e.target as HTMLFormElement).elements.namedItem('name') as HTMLInputElement
-        if (input.value.trim()) { add(input.value.trim()); input.value = '' }
+        const name = input.value.trim()
+        if (!name) return input.reportValidity()      // native hint, no silent no-op
+        add(name); input.value = ''
       }}>
-        <input name="name" placeholder="New subject — DSA, CN, OS…" />
+        <input name="name" required placeholder="New subject — DSA, CN, OS…" />
         <button disabled={adding}>Add</button>
       </form>
+      {note && !error && <p className="tag foot" style={{ marginTop: -14, marginBottom: 18 }}>{note}</p>}
 
       {!subjects.length && <p className="empty-inline">No subjects yet. Add one above, then feed it a PDF, a YouTube link or just a topic.</p>}
 
