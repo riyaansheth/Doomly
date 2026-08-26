@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import Card from './Card'
 import { browserClient } from '@/lib/supabase'
 import { nextCards, type FeedCard } from '@/lib/feed'
+import { withAuthRetry } from '@/lib/session'
 
 type Source = { label: string; type: string }
 
@@ -13,6 +14,8 @@ const cite = (s: Source | undefined, page: number) =>
 export default function Feed({ initial, sources, subjectIds, weights, brainrot }:
   { initial: FeedCard[]; sources: Record<string, Source>; subjectIds: string[]; weights: Record<string, number>; brainrot?: boolean }) {
   const [cards, setCards] = useState(initial)
+  const [marked, setMarked] = useState<Record<string, string>>({})   // card id → 'saved' | 'confused'
+  const [failed, setFailed] = useState('')
   const db = useRef(browserClient()).current
   const loading = useRef(false)
 
@@ -21,11 +24,27 @@ export default function Feed({ initial, sources, subjectIds, weights, brainrot }
   // silently dropped, which starved mastery, the cooldown and the teach-gate.
   const log = useCallback(async (card_id: string, action: string, dwell_ms?: number) => {
     const { data } = await db.auth.getUser()
-    if (!data.user) return
-    const { error } = await db.from('interactions')
-      .insert({ card_id, action, dwell_ms, user_id: data.user.id })
-    if (error) console.error('Doomly: interaction not logged —', error.message)
+    if (!data.user) return { error: { message: 'not signed in' } }
+    const res = await withAuthRetry(db, async () => await db.from('interactions')
+      .insert({ card_id, action, dwell_ms, user_id: data.user!.id }))
+    // A silently dropped write is indistinguishable from a dead button. Say so.
+    if (res.error) setFailed(`Not saved — ${res.error.message}`)
+    return res
   }, [db])
+
+  /** Save and Lost me are toggles: tapping again removes the mark. */
+  const mark = async (card_id: string, action: 'saved' | 'confused') => {
+    if (marked[card_id] === action) {
+      setMarked((m) => ({ ...m, [card_id]: '' }))
+      const { data } = await db.auth.getUser()
+      if (data.user) await db.from('interactions').delete()
+        .eq('card_id', card_id).eq('user_id', data.user.id).eq('action', action)
+      return
+    }
+    setMarked((m) => ({ ...m, [card_id]: action }))
+    const res = await log(card_id, action)
+    if (res?.error) setMarked((m) => ({ ...m, [card_id]: '' }))   // roll back on failure
+  }
 
   const topUpRef = useRef<(i: number) => void>(() => {})
   // Survives effect re-runs. Kept in a ref because appending cards re-attaches
@@ -77,6 +96,7 @@ export default function Feed({ initial, sources, subjectIds, weights, brainrot }
 
   return (
     <div className="feed">
+      {failed && <p className="toast" onClick={() => setFailed('')}>{failed}</p>}
       {cards.map((c, i) => (
         <section key={c.id} data-id={c.id} data-i={i} className="card">
           <div className="sheet">
@@ -84,8 +104,14 @@ export default function Feed({ initial, sources, subjectIds, weights, brainrot }
               <Card card={c} brainrot={brainrot} onAnswer={(correct) => correct !== null && log(c.id, correct ? 'correct' : 'wrong')} />
             </div>
             <footer>
-              <button onClick={(e) => { log(c.id, 'saved'); e.currentTarget.dataset.on = '1' }}>Save</button>
-              <button onClick={(e) => { log(c.id, 'confused'); e.currentTarget.dataset.on = '1' }}>Lost me</button>
+              <button data-on={marked[c.id] === 'saved' ? '1' : undefined}
+                onClick={() => mark(c.id, 'saved')}>
+                {marked[c.id] === 'saved' ? 'Saved' : 'Save'}
+              </button>
+              <button data-on={marked[c.id] === 'confused' ? '1' : undefined}
+                onClick={() => mark(c.id, 'confused')}>
+                {marked[c.id] === 'confused' ? 'Noted' : 'Lost me'}
+              </button>
               <span className="src">{cite(sources[c.document_id], c.source_page)}</span>
             </footer>
           </div>
