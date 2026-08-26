@@ -259,6 +259,17 @@ delivers push only to home-screen-installed sites). Both are inert on `http://lo
 
 ---
 
+## 12a. Design system
+
+`frontend-design-reference/` documents the frontend design system in detail — tokens,
+every component with its real measurements, the feed's scroll mechanics, mobile
+constraints, and interface voice. Read it before touching any UI.
+
+Every value in it was read out of `app/globals.css`. **The stylesheet is the source of
+truth**; if they disagree, the docs are stale.
+
+---
+
 ## 13. How the user likes to work
 
 - **Ponytail mode is active** (a plugin): laziest solution that actually works. Reuse before
