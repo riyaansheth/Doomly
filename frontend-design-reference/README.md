@@ -44,7 +44,12 @@ because its entire premise is *low contrast between an element and its backgroun
 this app is dense text at 2am. It traded the only thing that matters for a soft look, and
 it visibly dates the product to 2020.
 
-**Apple HIG** — chosen. Three reasons that are about this product, not about taste:
+**Apple HIG** — built, shipped, then replaced. It was the right call for getting to a
+working app: familiar, contrast pre-solved, and free San Francisco. But a familiar system
+chrome is a *default*, not a choice — it made Doomly look like every other iOS-derived web
+app, with nothing of its own subject in it.
+
+Its three arguments, kept because they still constrain the current system:
 
 1. **San Francisco is free here.** `-apple-system` resolves to SF on the exact devices
    the audience uses. Zero webfonts load. On a phone on Indian mobile data, that is a
@@ -53,6 +58,13 @@ it visibly dates the product to 2020.
    on both grounds. That is precisely what neumorphism gave away.
 3. **It disappears.** The audience already reads iOS all day. A familiar chrome is chrome
    nobody looks at — which is the goal, because the card is the app.
+
+**The direction now: *the night desk*.** The visual language comes from the student's own
+world — markers, highlighters, a photocopied handout, the margin of a textbook at 1am —
+rather than from an operating system. Warm near-black instead of pure black, an editorial
+serif for the question against a system UI face, and no brand accent at all: a marker set
+where highlighter, marker and pen each carry one meaning. Full specification in
+`build-prompts/02_design_system.md`.
 
 **The risk taken deliberately:** committing to `overflow: hidden` on `body`. Nothing on
 any screen scrolls except the panel that is supposed to. It makes the feed feel native and

@@ -270,6 +270,15 @@ truth**; if they disagree, the docs are stale.
 
 ---
 
+## 12b. Backlog
+
+`build-prompts/99_backlog.md` holds parked ideas with the open questions each one needs
+answered before it becomes a phase. Currently: a habit tracker, an AI notes creator from
+PDF, and four already-identified gaps ("Lost me" doing nothing, the feed dead-ending, Save
+having no destination, email sign-in).
+
+---
+
 ## 13. How the user likes to work
 
 - **Ponytail mode is active** (a plugin): laziest solution that actually works. Reuse before

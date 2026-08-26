@@ -2,65 +2,79 @@
 
 ## Colour
 
-Every colour is a token defined twice, on `:root[data-theme='light']` and
-`:root[data-theme='dark']`. **Never write a raw hex in a rule** — a hardcoded colour is a
-bug that only appears in one theme.
+Every colour is a token defined twice, on `:root[data-theme='dark']` and
+`:root[data-theme='light']`. **Never write a raw hex in a rule** — a hardcoded colour is a
+bug that only shows up in one theme.
 
-| token | light | dark | use |
+### Surfaces and ink
+
+| token | dark | light | use |
 |---|---|---|---|
-| `--grouped` | `#F2F2F7` | `#000000` | page background, the layer everything sits on |
-| `--surface` | `#FFFFFF` | `#1C1C1E` | elevated content: cards, list groups, the sheet |
-| `--label` | `#000000` | `#FFFFFF` | primary text |
-| `--label-2` | `rgba(60,60,67,.60)` | `rgba(235,235,245,.60)` | secondary text, explanations, captions |
-| `--label-3` | `rgba(60,60,67,.30)` | `rgba(235,235,245,.30)` | placeholders, source citations, chevrons |
-| `--separator` | `rgba(60,60,67,.29)` | `rgba(84,84,88,.65)` | hairlines between rows |
-| `--fill` | `rgba(118,118,128,.12)` | `rgba(118,118,128,.24)` | recessed surfaces: inputs, secondary buttons, code |
-| `--blue` | `#007AFF` | `#0A84FF` | the only accent. Interactive means blue; blue means interactive |
-| `--red` | `#FF3B30` | `#FF453A` | wrong answers, destructive actions, urgent exams |
-| `--green` | `#34C759` | `#30D158` | correct answers, on-state |
-| `--material` | `rgba(242,242,247,.72)` | `rgba(28,28,30,.72)` | translucent bars, paired with `backdrop-filter` |
+| `--ground` | `#0E0E11` | `#F4F1EA` | the desk — page background |
+| `--surface` | `#17171B` | `#FFFFFF` | a sheet on it — cards, list groups |
+| `--raised` | `#202026` | `#FBFAF7` | something on the sheet — options, code |
+| `--ink` | `#F4F1EA` | `#14141A` | primary text |
+| `--ink-2` | `rgba(244,241,234,.62)` | `rgba(20,20,26,.64)` | secondary text, prose |
+| `--ink-3` | `rgba(244,241,234,.34)` | `rgba(20,20,26,.36)` | placeholders, citations, kickers |
+| `--rule` | `rgba(244,241,234,.14)` | `rgba(20,20,26,.14)` | hairlines and borders |
+| `--fill` | `rgba(244,241,234,.07)` | `rgba(20,20,26,.05)` | recessed controls |
 
-**Depth comes from layering, not shadow.** `--surface` on `--grouped` is what makes
-something look raised. There are exactly two non-inset `box-shadow`s in the whole
-stylesheet, both on small controls that need to read as physically on top of their track:
+**Neither ground is neutral.** Dark is a warm near-black, light is paper. Pure `#000`/`#FFF`
+is where every generic app lands and reads as a void rather than a desk at night.
 
-```css
-.tab.on      { box-shadow: 0 1px 3px rgba(0,0,0,.12); }   /* segmented thumb */
-.switch-knob { box-shadow: 0 2px 4px rgba(0,0,0,.2);  }   /* toggle knob */
-```
+### The marker set
 
-Everything else uses `inset 0 .5px 0 var(--separator)` as a hairline. If you reach for a
-drop shadow, you almost certainly want `--surface` or `--fill` instead.
+There is **no single brand accent**. Accents are the pens a student marks a book with, used
+semantically and never decoratively:
 
-**The label alphas are the accessibility mechanism.** `--label-2` at 60% opacity is not an
-arbitrary grey; it is Apple's `secondaryLabel`, chosen to clear contrast targets on both
-grounds. Substituting a flat grey silently breaks that.
+| token | dark | light | job |
+|---|---|---|---|
+| `--highlighter` | `#F2E14C` | `#D9C21F` | emphasis, correct answers, progress |
+| `--marker` | `#FF4A38` | `#D93A28` | wrong answers, corrections, an exam inside 3 days |
+| `--pen` | `#6E8BFF` | `#3355E0` | interactive — and nothing else |
+| `--wash` | `rgba(242,225,76,.20)` | `rgba(242,225,76,.45)` | highlighter as a wash under ink |
 
-**Answer states tint rather than fill**, via
-`color-mix(in srgb, var(--green) 18%, transparent)`. An 18% wash reads unmistakably as
-right or wrong while leaving the option text legible — a solid fill would force white text
-and make the card shout.
+Rules that keep it from becoming decoration:
 
-### The brand blue
+- **Highlighter is a wash, never a fill.** It sits *under* ink at low alpha, the way a real
+  highlighter does. Text stays `--ink`.
+- **Marker is a stroke or a text colour, never a filled block.**
+- **Pen is the only colour on interactive elements**, and it earns its meaning by being
+  used for nothing else.
 
-The icon uses a slightly different gradient — `#0A84FC → #0038EB` — sampled from the
-artwork itself. That lives in the manifest's `theme_color` and the icon crops. **It is not
-a UI token.** Interface blue stays `--blue`.
+Three inks with distinct jobs read as a pen case. One accent on near-black is a current
+AI-design cliché, and this exists partly to dodge it.
 
----
+**Depth comes from layered surfaces, not shadow.** `--surface` on `--ground`, `--raised` on
+`--surface`. There are no drop shadows in the stylesheet at all — separation is a hairline
+(`inset 0 1px 0 var(--rule)`) or a change of surface.
+
+### The brand blue is not a UI token
+
+The icon's `#0A84FC → #0038EB` gradient lives in the manifest and the icon crops only.
+Interface interaction is `--pen`.
 
 ## Type
 
+A deliberate pairing, and exactly one webfont.
+
 ```css
-font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, sans-serif;
+--serif: Newsreader          /* card questions, page titles, stat numbers */
+--ui:    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif
+--mono:  ui-monospace, 'SF Mono', Menlo, monospace
 ```
 
-San Francisco, supplied by the OS. **No webfonts load, anywhere.** Two Google fonts were
-removed to get here — that is a page-weight win on mobile data, and it should not be
-undone for a typographic preference.
+**Newsreader — an editorial serif — is used only on the card question, page titles and the
+big numbers on Home.** Everything else is the system stack, which costs zero bytes and is
+San Francisco or Roboto on the phones this audience carries.
 
-Monospace is `ui-monospace, 'SF Mono', Menlo, monospace`, and it appears in exactly one
-place: code blocks inside `code_bite` cards.
+**Why a serif on the question.** The product's tension is serious content in a frivolous
+format. Setting the question in an editorial serif on a feed card makes that tension
+typographic — it looks like something worth reading inside something built to be flicked
+past. It is also the fastest way to stop looking like every other app.
+
+One webfont, subset to latin, `display: swap`, on one element. That is the whole budget;
+this audience is on mobile data. Do not add a second face.
 
 ### Scale
 
@@ -69,8 +83,8 @@ one thing; 34px next to 13px reads as two.
 
 | role | size | weight | tracking | where |
 |---|---|---|---|---|
-| Large Title | 34px | 700 | −.025em | page `h1` |
-| Card title | clamp(24, 5.6vw, 30) | 700 | −.024em | the question on a card |
+| Large Title | 34px | 600 | −.02em | page `h1` — **serif** |
+| Card title | clamp(25, 6vw, 32) | 500 | −.014em | the question — **serif** |
 | Body | 17px | 400 | −.01em | default, list row titles, card prose |
 | Callout | 16px | 400 | — | answer options, all form inputs |
 | Subhead | 15px | 400/600 | — | explanations, banners, secondary buttons |
@@ -118,16 +132,15 @@ so the phone layout is the true layout and desktop is the same column with more 
 
 ## Radius
 
-| radius | use |
-|---|---|
-| `999px` | pills — capsule buttons, the marks badge, switches, `.tab` |
-| `22px` | the card sheet, the largest surface in the app |
-| `12px` | the default. List groups, banners, inputs on a surface, code blocks |
-| `10px` | inputs and buttons that sit directly on the page background |
-| `8px` | small inline controls inside a settings row |
-| `50%` | circles — the option letter, the theme toggle |
-| `9px` / `7px` | the segmented control and its thumb — iOS's own values, kept as a pair |
-| `3px` | the mastery progress bar |
+A named scale, from the icon's squircle — generous and continuous:
+
+| token | value | use |
+|---|---|---|
+| `--r-pill` | `999px` | capsules — filled buttons, the switch, the toggle |
+| `--r-xl` | `28px` | the card sheet, the largest surface in the app |
+| `--r-lg` | `20px` | list groups, stat rows, content blocks |
+| `--r-md` | `14px` | the default — buttons, inputs, banners, code |
+| `--r-sm` | `8px` | small inline controls, colour chips, the marks box |
 
 **Nothing is square.** A 0px radius is a deliberate departure and needs a reason.
 
@@ -144,10 +157,19 @@ becomes noise on the second minute.
 
 | what | duration | easing |
 |---|---|---|
+| **the highlighter sweep** | .26s | ease-out |
 | theme change | .25s | ease |
-| option answered | .15s | ease |
+| option hover | .15s | ease |
 | switch knob | .2s | ease |
 | everything else | none | — |
+
+**The sweep is the signature and the only orchestrated moment.** When an answer is
+confirmed correct, a `--wash` pseudo-element scales from `scaleX(0)` to `scaleX(1)` across
+it — a highlighter marking a right answer in a book. `transform` only, so it composites on
+the GPU.
+
+It is never the sole signal: the correct option also gains weight and its letter takes a
+highlighter border, because a colour wash alone fails for colour-blind students.
 
 Presses use `opacity: .5` on `:active` rather than a transform — that is the iOS
 convention, and it costs nothing.

@@ -1,6 +1,14 @@
 import type { Metadata, Viewport } from 'next'
+import { Newsreader } from 'next/font/google'
 import './globals.css'
 import TabBar from '@/components/TabBar'
+
+// The one webfont, on the one element that earns it: the card question.
+// Subset to latin, swap so text never blocks on it.
+const serif = Newsreader({
+  subsets: ['latin'], weight: ['500', '600'], style: ['normal'],
+  display: 'swap', variable: '--serif',
+})
 
 export const metadata: Metadata = {
   title: 'Doomly',
@@ -18,7 +26,7 @@ export const viewport: Viewport = {
   // anyone who needs it — capping it would be an accessibility regression.
   viewportFit: 'cover',
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#F2F2F7' },
+    { media: '(prefers-color-scheme: light)', color: '#F4F1EA' },
     { media: '(prefers-color-scheme: dark)', color: '#000000' },
   ],
 }
@@ -30,7 +38,7 @@ const noFlash = `document.documentElement.dataset.theme =
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className={serif.variable} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: noFlash }} />
       </head>
