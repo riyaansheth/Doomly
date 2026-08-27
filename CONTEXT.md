@@ -28,7 +28,7 @@ product; the AI is infrastructure.
 | DB / auth / storage | Supabase, project ref **`ofmwcufhxcwmggnjdrel`**, org `dizrupt`, free tier |
 | LLM | **OpenAI** (user's explicit choice — do not switch to Anthropic), model via `OPENAI_MODEL`, currently `gpt-5` |
 | Push | `web-push` + VAPID + a service worker |
-| Deploy | **not deployed yet.** Target **doomly.riyaansheth.tech** via Netlify — see §11a. |
+| Deploy | **live on Netlify** at `doomly.netlify.app`, site `doomly`, team `freehost`. Custom domain `doomly.riyaansheth.tech` attached but DNS not yet repointed — see §11a. |
 
 Runs locally at `http://localhost:3000`, LAN `http://192.168.1.4:3000`.
 
@@ -208,51 +208,38 @@ for a 2nd device), `supabase/schema.sql` (2-band cooldown → SM-2).
 
 ---
 
-## 11a. Deploying to doomly.riyaansheth.tech
+## 11a. Hosting
 
-Host is **Netlify** (the portfolio already lives there). `netlify.toml` and the scheduled
-function are committed; nothing else is done.
+**Live:** https://doomly.netlify.app — Netlify site `doomly`, team `freehost`, linked to
+this repo (`.netlify/state.json`, gitignored).
 
-**Blocked on one thing: authentication.** `netlify login` is browser OAuth and cannot be
-completed by an agent. Either the user runs it once, or they create a personal access token
-(Netlify → User settings → Applications → Personal access tokens) and put it in
-`.env.local` as `NETLIFY_AUTH_TOKEN`, which makes the whole CLI work headlessly.
+Redeploy with `netlify deploy --prod --build`.
 
-**Then:**
-```bash
-netlify init            # or: netlify link, if the site already exists
-netlify deploy --prod
-netlify domains:add doomly.riyaansheth.tech
-```
+**Env set on Netlify** (production + deploy-preview): the two Supabase publics,
+`NEXT_PUBLIC_SITE_URL=https://doomly.riyaansheth.tech`, `OPENAI_API_KEY`, `OPENAI_MODEL`,
+both VAPID keys, `CRON_SECRET`. **`SUPABASE_SECRET_KEY` is still unset**, so `/api/notify`
+returns 500 and no reminder can send. `DATABASE_URL` is deliberately absent — only
+`npm run db:push` uses it, so that credential stays local.
 
-**Env vars to set on Netlify** (Builds **and** Functions scope — SSR needs both).
-`DATABASE_URL` is deliberately absent: only `npm run db:push` uses it, so it stays local.
+Env values are injected at build time; changing one needs a redeploy to take effect.
 
-```
-NEXT_PUBLIC_SUPABASE_URL          NEXT_PUBLIC_SUPABASE_ANON_KEY
-NEXT_PUBLIC_SITE_URL              https://doomly.riyaansheth.tech
-OPENAI_API_KEY                    required at runtime — the SDK reads it implicitly,
-                                  so it never appears in a grep for process.env
-OPENAI_MODEL                      NEXT_PUBLIC_VAPID_PUBLIC_KEY
-VAPID_PRIVATE_KEY                 CRON_SECRET
-SUPABASE_SECRET_KEY               still empty; /api/notify 500s without it
-```
+**One step left — DNS.** `doomly.riyaansheth.tech` still points at `cname.vercel-dns.com`
+from an earlier plan. At the registrar (get.tech panel, orderbox nameservers), edit that
+one CNAME to **`doomly.netlify.app`**. Netlify issues the certificate once it resolves.
+The apex `A 75.2.60.5` and `www → riyaanportfolio.netlify.app` serve the portfolio and must
+not be touched.
 
-Env values are injected **at build time**, so changing one needs a redeploy to take effect.
+**Verified live:** all seven routes 200, the manifest and apple-touch-icon serve, and
+`/api/notify` returns 403 without the cron secret.
 
-**DNS.** The record already exists at the registrar (get.tech panel, orderbox nameservers):
-`doomly → cname.vercel-dns.com`. It must be repointed to whatever Netlify prints, usually
-`<site>.netlify.app`. The apex and `www` serve the portfolio from Netlify and must not be
-touched.
+**Scheduled function.** `netlify/functions/exam-reminders.mts` runs `30 3 * * *` UTC —
+09:00 IST — and fetches `/api/notify` with `CRON_SECRET`. Netlify schedules are UTC, so
+09:00 UTC would be 14:30 IST. It only fires on **published** deploys, never previews; use
+**Run now** in the Netlify UI to test. `vercel.json` was deleted: a cron declaration for
+one host is inert on another and fails silently.
 
-**The scheduled function.** `netlify/functions/exam-reminders.mts` runs at `30 3 * * *`
-UTC — 09:00 IST — and fetches `/api/notify` with `CRON_SECRET`. Netlify schedules are UTC,
-and 09:00 UTC would be 14:30 IST. Scheduled functions only fire on **published** deploys,
-never on previews; use **Run now** in the UI to test. `vercel.json` was deleted — a cron
-declaration for one host is inert on another, and the failure is silent.
-
-**What only starts working on HTTPS:** Add to Home Screen, and web push (iOS delivers push
-only to home-screen-installed sites). Both are inert on localhost.
+**What only works on HTTPS:** Add to Home Screen, and web push (iOS delivers push only to
+home-screen-installed sites). Both are now testable on the live URL.
 
 ---
 
