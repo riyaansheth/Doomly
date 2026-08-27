@@ -1,5 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { isYouTube } from './youtube'
+import { kindOf } from './office'
 
 export const LEVELS = [
   { value: 1, label: 'New to this' },
@@ -45,18 +46,22 @@ export async function ingest(db: SupabaseClient, subjectId: string, doc: NewDoc,
   }
 }
 
-const upload = async (db: SupabaseClient, userId: string, file: File) => {
-  const path = `${userId}/${crypto.randomUUID()}.pdf`
+const upload = async (db: SupabaseClient, userId: string, file: File, ext: string) => {
+  const path = `${userId}/${crypto.randomUUID()}.${ext}`
   const { error } = await db.storage.from('docs').upload(path, file)
   return { path, error }
 }
 
-export async function uploadPdf(
+/** PDFs, slide decks and spreadsheets all take the same route in. */
+export async function uploadFile(
   db: SupabaseClient, userId: string, subjectId: string, file: File, level: number, say: Say,
 ) {
-  const { path, error } = await upload(db, userId, file)
+  const kind = kindOf(file.name)
+  if (!kind) return say(`Doomly can read PDFs, PowerPoint and Excel files — not ${file.name.split('.').pop()}.`)
+
+  const { path, error } = await upload(db, userId, file, kind)
   if (error) return say(error.message)
-  return ingest(db, subjectId, { filename: file.name, source_type: 'pdf', storage_path: path, level }, say)
+  return ingest(db, subjectId, { filename: file.name, source_type: kind, storage_path: path, level }, say)
 }
 
 /** One box for both: a link is a link, anything else is a topic to teach. */
@@ -67,7 +72,7 @@ export const addSource = (db: SupabaseClient, subjectId: string, text: string, l
 
 /** A timetable is one small table, so it skips the chunk loop entirely. */
 export async function uploadTimetable(db: SupabaseClient, userId: string, file: File, say: Say) {
-  const { path, error } = await upload(db, userId, file)
+  const { path, error } = await upload(db, userId, file, 'pdf')
   if (error) return say(error.message)
 
   say('Reading your timetable…')

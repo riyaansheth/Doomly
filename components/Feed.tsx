@@ -8,8 +8,15 @@ import { withAuthRetry } from '@/lib/session'
 type Source = { label: string; type: string }
 
 // A page number means nothing for a video or a typed topic.
-const cite = (s: Source | undefined, page: number) =>
-  !s ? '' : s.type === 'youtube' ? `${s.label} — ${page}:00` : s.type === 'topic' ? s.label : `${s.label} — p.${page}`
+const cite = (s: Source | undefined, page: number) => {
+  if (!s) return ''
+  // Each source cites the unit it actually has: a page, a slide, a sheet, a timestamp.
+  if (s.type === 'youtube') return `${s.label} — ${page}:00`
+  if (s.type === 'topic') return s.label
+  if (s.type === 'pptx') return `${s.label} — slide ${page}`
+  if (s.type === 'xlsx') return `${s.label} — sheet ${page}`
+  return `${s.label} — p.${page}`
+}
 
 export default function Feed({ initial, sources, subjectIds, weights, brainrot }:
   { initial: FeedCard[]; sources: Record<string, Source>; subjectIds: string[]; weights: Record<string, number>; brainrot?: boolean }) {

@@ -148,3 +148,88 @@ test('calendar events link to the deployed site, not whatever host built them', 
   assert.ok(!ics([e]).includes('localhost'), 'ics points at localhost')
   assert.match(ics([e]), /DESCRIPTION:.*https?:\/\//)
 })
+
+// ---- office formats ----
+import { pptxSlides, xlsxSheets, kindOf } from '../lib/office.ts'
+import { zipSync, strToU8 } from 'fflate'
+import * as XLSX from 'xlsx'
+
+const fakePptx = (slides: string[]) => {
+  const files: Record<string, Uint8Array> = { '[Content_Types].xml': strToU8('<Types/>') }
+  slides.forEach((text, i) => {
+    files[`ppt/slides/slide${i + 1}.xml`] =
+      strToU8(`<p:sld><p:cSld><p:spTree><a:t>${text}</a:t></p:spTree></p:cSld></p:sld>`)
+  })
+  return zipSync(files)
+}
+
+test('pptx extraction keeps one page per slide', () => {
+  const out = pptxSlides(fakePptx(['Title slide', 'Stacks are LIFO', 'Queues are FIFO']))
+  assert.equal(out.length, 3)
+  assert.equal(out[1], 'Stacks are LIFO')
+})
+
+test('slide 10 sorts after slide 9, not after slide 1', () => {
+  // String sort would put slide10 second and silently scramble every citation.
+  const out = pptxSlides(fakePptx(Array.from({ length: 11 }, (_, i) => `slide ${i + 1}`)))
+  assert.equal(out[9], 'slide 10')
+  assert.equal(out[10], 'slide 11')
+})
+
+test('pptx decodes XML entities rather than showing them raw', () => {
+  const out = pptxSlides(fakePptx(['O(n) &lt; O(n&amp;sup2;)']))
+  assert.equal(out[0], 'O(n) < O(n&sup2;)')
+})
+
+test('a file with no slides fails loudly', () => {
+  assert.throws(() => pptxSlides(zipSync({ 'x.txt': strToU8('hi') })), /No slides/)
+})
+
+test('xlsx extraction keeps one page per sheet, named', () => {
+  const wb = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['Term', 'Meaning'], ['LIFO', 'Last in first out']]), 'Glossary')
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['Week', 'Topic'], [1, 'Arrays']]), 'Plan')
+  const out = xlsxSheets(new Uint8Array(XLSX.write(wb, { type: 'array', bookType: 'xlsx' })))
+  assert.equal(out.length, 2)
+  assert.match(out[0], /^Sheet: Glossary/)
+  assert.match(out[0], /Last in first out/)
+  assert.match(out[1], /^Sheet: Plan/)
+})
+
+test('file kind comes from the extension, and unknown types are rejected', () => {
+  assert.equal(kindOf('notes.PDF'), 'pdf')
+  assert.equal(kindOf('deck.pptx'), 'pptx')
+  assert.equal(kindOf('marks.xls'), 'xlsx')
+  assert.equal(kindOf('photo.png'), null)
+})
+
+test('a slide deck is not silently swallowed by the PDF text threshold', () => {
+  // Slides carry a fraction of a PDF page's text. With the PDF minimum, a real
+  // 7-slide deck came out as ONE chunk starting at slide 4 — three slides gone,
+  // with nothing said about it.
+  const slides = [
+    'Introduction to Stacks',
+    'A stack is a LIFO structure. The last element pushed is the first popped.',
+    'push() adds to the top. pop() removes from the top.',
+    'Applications: undo history, expression evaluation, call stacks.',
+    'Time complexity: push, pop and peek are all O(1).',
+    'Common mistake: stack overflow is not integer overflow.',
+    'Summary and further reading.',
+  ]
+  const chunks = chunk(slides, 'pptx')
+  assert.ok(chunks.length >= 2, 'a 7-slide deck should not collapse to one chunk')
+  assert.match(chunks[0], /\[page 1\]/, 'must start at slide 1, not part-way in')
+  for (let i = 1; i <= slides.length; i++)
+    assert.ok(chunks.join(' ').includes(`[page ${i}]`), `slide ${i} was dropped`)
+})
+
+test('a single worksheet is enough to generate from', () => {
+  const one = chunk(['Sheet: Glossary\nLIFO,Last in first out\nFIFO,First in first out'], 'xlsx')
+  assert.equal(one.length, 1)
+})
+
+test('pdf chunking is unchanged — 3 pages per chunk, dense minimum', () => {
+  const pages = Array.from({ length: 7 }, (_, i) => `content of page ${i + 1}. `.repeat(20))
+  assert.equal(chunk(pages).length, 3)
+  assert.equal(chunk(pages, 'pdf').length, 3)
+})

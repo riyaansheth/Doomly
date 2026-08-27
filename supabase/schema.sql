@@ -15,7 +15,7 @@ create table documents (
   id uuid primary key default gen_random_uuid(),
   subject_id uuid not null references subjects on delete cascade,
   filename text not null,                  -- display label: file name, video title, or topic
-  source_type text not null default 'pdf' check (source_type in ('pdf','youtube','topic')),
+  source_type text not null default 'pdf' check (source_type in ('pdf','pptx','xlsx','youtube','topic')),
   source_ref text,                         -- youtube url, or the topic the student typed
   level int not null default 3 check (level between 1 and 5),
   storage_path text,                       -- pdf only
@@ -56,6 +56,10 @@ alter table subjects  add column if not exists semester text;
 alter table subjects  add column if not exists order_mode text not null default 'adaptive';
 alter table subjects  add column if not exists exam_time time;   -- null = assume 9am
 alter table cards     add column if not exists brainrot jsonb;
+-- slide decks and spreadsheets joined pdf/youtube/topic as sources
+alter table documents drop constraint if exists documents_source_type_check;
+alter table documents add constraint documents_source_type_check
+  check (source_type in ('pdf','pptx','xlsx','youtube','topic'));
 alter table documents add column if not exists source_type text not null default 'pdf';
 alter table documents add column if not exists source_ref text;
 alter table documents add column if not exists level int not null default 3;

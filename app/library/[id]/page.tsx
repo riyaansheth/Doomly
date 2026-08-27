@@ -3,7 +3,7 @@ import { use, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useSession } from '@/lib/session'
-import { LEVELS, addSource, uploadPdf } from '@/lib/ingest'
+import { LEVELS, addSource, uploadFile } from '@/lib/ingest'
 
 type Doc = {
   id: string; filename: string; source_type: string
@@ -83,6 +83,9 @@ export default function SubjectPage({ params }: { params: Promise<{ id: string }
         }}>{subject.name}</h1>
 
       <h2 className="group-name">Add material</h2>
+      <p className="tag foot" style={{ margin: '0 0 10px 4px' }}>
+        PDFs, PowerPoint decks and Excel sheets — or a YouTube link, or just a topic.
+      </p>
       <form className="source card-block" onSubmit={(e) => {
         e.preventDefault()
         const f = e.target as HTMLFormElement
@@ -99,11 +102,11 @@ export default function SubjectPage({ params }: { params: Promise<{ id: string }
         </select>
         <button>Add</button>
         <label className="file">
-          PDF
-          <input type="file" accept="application/pdf" hidden
+          Upload file
+          <input type="file" accept="application/pdf,.pdf,.pptx,.ppt,.xlsx,.xls" hidden
             onChange={(e) => {
               const lvl = (e.target.form?.elements.namedItem('level') as HTMLSelectElement)?.value ?? '3'
-              if (e.target.files?.[0] && user) uploadPdf(db, user.id, subject.id, e.target.files[0], Number(lvl), setProgress)
+              if (e.target.files?.[0] && user) uploadFile(db, user.id, subject.id, e.target.files[0], Number(lvl), setProgress)
             }} />
         </label>
       </form>

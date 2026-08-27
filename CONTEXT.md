@@ -63,7 +63,7 @@ Source of truth: `supabase/schema.sql`. Apply with `npm run db:push`.
 **Tables:** `subjects`, `documents`, `cards`, `interactions`, `push_subscriptions`, `sent_reminders`
 
 - `subjects` — `name`, `exam_date`, `exam_time`, `archived`, `semester`, `order_mode` (`adaptive` | `syllabus`)
-- `documents` — `source_type` (`pdf` | `youtube` | `topic`), `source_ref`, `level` 1–5,
+- `documents` — `source_type` (`pdf` | `pptx` | `xlsx` | `youtube` | `topic`), `source_ref`, `level` 1–5,
   `storage_path` (pdf only, nullable), `pages` jsonb, `chunks_total`, `chunks_done`
 - `cards` — `type` (`concept` | `mcq` | `code_bite` | `exam_trap` | `true_false`), `topic`,
   `difficulty` 1–5, `payload` jsonb (shape varies by type), **`source_page`** (the grounding story),
@@ -92,7 +92,7 @@ zero rows from every table and view.
 ```
 PDF / YouTube URL / typed topic
   → documents row
-  → text: unpdf per-page | caption track per-minute | 4 ladder prompts
+  → text: unpdf per-page | pptx per-slide | xlsx per-sheet | captions per-minute | 4 ladder prompts
   → chunk (3 pages) → one OpenAI call per chunk → cards
   → next_cards() ranks → feed → interactions → back into the ranking
 ```

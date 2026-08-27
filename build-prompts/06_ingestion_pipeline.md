@@ -2,13 +2,19 @@
 
 Three ways in, one pipeline. Everything becomes an array of "pages" and then chunks.
 
-## The three sources
+## The sources
 
 **PDF** → upload to Supabase Storage, extract text **per page** (`unpdf`, not a
 whole-document extractor). Per-page is non-negotiable: it is what lets a card cite `p.37`.
 
 **YouTube** → fetch the caption track and bucket it into **one page per minute**, so a card
 can cite `12:00` exactly as a PDF card cites a page.
+
+**PowerPoint** → a `.pptx` is a zip of XML. Read `ppt/slides/slideN.xml` directly and take
+one page per slide, so a card cites "slide 7". Sort the slide files **numerically** — a
+string sort puts slide10 second and scrambles every citation.
+
+**Excel** → one page per worksheet, each headed by its sheet name.
 
 **Typed topic** → no source text at all. The "pages" are four prompts walking a ladder:
 foundations → mechanics → trade-offs → application. The model teaches from its own
@@ -25,8 +31,21 @@ exam* — mapping to 1 / 3 / 5, passed to generation in phase 7.
 
 ## Chunking
 
-Group pages three at a time, keeping page markers visible in the text so the model can
-attribute each card:
+**Chunk size is per format, and getting it wrong loses material silently.** A PDF page is
+dense; a slide carries a fraction of that text; a worksheet is already a unit:
+
+| format | pages per chunk | minimum characters |
+|---|---|---|
+| pdf | 3 | 200 |
+| pptx | 5 | 60 |
+| xlsx | 1 | 30 |
+
+Using the PDF numbers for a deck discarded most of it — a real 7-slide deck came out as one
+chunk *starting at slide 4*, with nothing said about the three that vanished. Whatever
+computes `chunks_total` and whatever indexes into the chunks must use the same shape, or
+the count and the content diverge.
+
+Group pages, keeping page markers visible in the text so the model can attribute each card:
 
 ```
 [page 4]

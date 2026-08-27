@@ -1,7 +1,21 @@
 import OpenAI from 'openai'
 
 const MODEL = process.env.OPENAI_MODEL || 'gpt-5'
-const PAGES_PER_CHUNK = 3
+
+/**
+ * How much source makes one chunk, per format. A PDF page is dense; a slide
+ * carries a fraction of that text, and a worksheet is self-contained. Using the
+ * PDF numbers for a deck silently discarded most of it — a 7-slide deck came out
+ * as one chunk starting at slide 4.
+ */
+const SHAPE = {
+  pdf:   { per: 3, min: 200 },
+  pptx:  { per: 5, min: 60 },   // slides are short, so group more and keep more
+  xlsx:  { per: 1, min: 30 },   // one sheet is already a unit
+  other: { per: 3, min: 200 },
+} as const
+
+export type Shape = keyof typeof SHAPE
 
 export type CardType = 'concept' | 'mcq' | 'code_bite' | 'exam_trap' | 'true_false'
 export type Card = {
@@ -14,15 +28,16 @@ export type Card = {
 }
 
 /** Split per-page text into chunks, keeping page numbers visible to the model. */
-export function chunk(pages: string[]): string[] {
+export function chunk(pages: string[], shape: Shape = 'pdf'): string[] {
+  const { per, min } = SHAPE[shape] ?? SHAPE.other
   const out: string[] = []
-  for (let i = 0; i < pages.length; i += PAGES_PER_CHUNK) {
+  for (let i = 0; i < pages.length; i += per) {
     const text = pages
-      .slice(i, i + PAGES_PER_CHUNK)
+      .slice(i, i + per)
       .map((p, j) => `[page ${i + j + 1}]\n${p}`)
       .join('\n\n')
       .trim()
-    if (text.replace(/\[page \d+\]/g, '').trim().length > 200) out.push(text)
+    if (text.replace(/\[page \d+\]/g, '').trim().length > min) out.push(text)
   }
   return out
 }

@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server'
 import { extractText, getDocumentProxy } from 'unpdf'
 import { serverClient } from '@/lib/supabase-server'
-import { chunk, generateCards, topicChunks } from '@/lib/generate'
+import { chunk, generateCards, topicChunks, type Shape } from '@/lib/generate'
 import { transcriptPages } from '@/lib/youtube'
+import { pptxSlides, xlsxSheets } from '@/lib/office'
 
 const fail = (msg: string) => NextResponse.json({ error: msg }, { status: 500 })
 
@@ -24,6 +25,8 @@ export async function POST(req: Request) {
   if (error || !doc) return NextResponse.json({ error: 'not found' }, { status: 404 })
 
   const isTopic = doc.source_type === 'topic'
+  // chunks_total and the per-call index must be computed identically.
+  const shape: Shape = (['pdf', 'pptx', 'xlsx'].includes(doc.source_type) ? doc.source_type : 'other') as Shape
 
   // Source text is fetched once and cached on the row, whatever it came from.
   let pages: string[] = doc.pages
@@ -36,22 +39,27 @@ export async function POST(req: Request) {
       } else {
         const { data: file, error: dl } = await db.storage.from('docs').download(doc.storage_path)
         if (dl || !file) return fail(`download failed: ${dl?.message}`)
-        const pdf = await getDocumentProxy(new Uint8Array(await file.arrayBuffer()))
-        pages = (await extractText(pdf, { mergePages: false })).text
+        const bytes = new Uint8Array(await file.arrayBuffer())
+
+        // Every format resolves to an array of "pages" so one card can cite one
+        // unit of the source: a PDF page, a slide, or a worksheet.
+        if (doc.source_type === 'pptx') pages = pptxSlides(bytes)
+        else if (doc.source_type === 'xlsx') pages = xlsxSheets(bytes)
+        else pages = (await extractText(await getDocumentProxy(bytes), { mergePages: false })).text
       }
     } catch (e) {
       return fail((e as Error).message)
     }
     if (!pages.length) return fail('Nothing readable in that source.')
 
-    const total = isTopic ? pages.length : chunk(pages).length
+    const total = isTopic ? pages.length : chunk(pages, shape).length
     const { error: pErr } = await db.from('documents')
       .update({ pages, chunks_total: total }).eq('id', doc.id)
     if (pErr) return fail(`page save failed: ${pErr.message}`)
   }
 
   // A typed topic is already one prompt per chunk; everything else gets grouped.
-  const chunks = isTopic ? pages : chunk(pages)
+  const chunks = isTopic ? pages : chunk(pages, shape)
   const i = doc.chunks_done
   if (i >= chunks.length) return NextResponse.json({ done: true, total: chunks.length, added: 0 })
 
