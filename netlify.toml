@@ -1,0 +1,10 @@
+# Netlify build config. Secrets are NOT set here — netlify.toml is committed, and
+# vars declared in it aren't available to functions at runtime anyway. They go in
+# the UI/CLI so they carry both the Builds and Functions scopes.
+
+[build]
+  command = "next build"
+  publish = ".next"
+
+[functions]
+  node_bundler = "esbuild"
