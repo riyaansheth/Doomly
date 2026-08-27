@@ -12,7 +12,10 @@ can cite `12:00` exactly as a PDF card cites a page.
 
 **PowerPoint** → a `.pptx` is a zip of XML. Read `ppt/slides/slideN.xml` directly and take
 one page per slide, so a card cites "slide 7". Sort the slide files **numerically** — a
-string sort puts slide10 second and scrambles every citation.
+string sort puts slide10 second and scrambles every citation. Read the **speaker notes**
+too, resolved through each slide's own `_rels` file, because notesSlide numbering does not
+track slide numbering — lecturers put real content there. Reject legacy `.ppt`: it is
+binary, not a zip, so it would reach the parser and fail confusingly.
 
 **Excel** → one page per worksheet, each headed by its sheet name.
 
@@ -82,7 +85,12 @@ the browser loop. A failure anywhere produced **no progress line and no error** 
 screen.
 
 Every step returns its own message: `download failed: …`, `generation failed: …`, `card
-insert failed: …`. The loop reports live and bails out if progress stops advancing rather
+insert failed: …`. **Never let a library's own error reach the user** — `invalid zip data`
+from a zip reader means nothing to a student; say what to do instead ("if it's an older
+.ppt, save it as .pptx"). When a file's text can't be extracted at all, **delete the
+document row and its uploaded file** rather than leaving a permanent 0-card entry in the
+material list with an orphan in storage. Remove the storage object first, while the row
+still knows its path. The loop reports live and bails out if progress stops advancing rather
 than looping forever:
 
 ```

@@ -150,7 +150,7 @@ test('calendar events link to the deployed site, not whatever host built them', 
 })
 
 // ---- office formats ----
-import { pptxSlides, xlsxSheets, kindOf } from '../lib/office.ts'
+import { pptxSlides, xlsxSheets, kindOf, whyUnsupported } from '../lib/office.ts'
 import { zipSync, strToU8 } from 'fflate'
 import * as XLSX from 'xlsx'
 
@@ -199,8 +199,44 @@ test('xlsx extraction keeps one page per sheet, named', () => {
 test('file kind comes from the extension, and unknown types are rejected', () => {
   assert.equal(kindOf('notes.PDF'), 'pdf')
   assert.equal(kindOf('deck.pptx'), 'pptx')
-  assert.equal(kindOf('marks.xls'), 'xlsx')
+  assert.equal(kindOf('marks.xls'), 'xlsx')   // SheetJS reads legacy binary xls
   assert.equal(kindOf('photo.png'), null)
+  // .ppt is binary, not a zip — accepting it would fail confusingly at the parser.
+  assert.equal(kindOf('lecture.ppt'), null)
+})
+
+test('an unsupported file is told what to do about it', () => {
+  assert.match(whyUnsupported('Lecture 4.ppt'), /save as \.pptx/)
+  assert.match(whyUnsupported('Essay.docx'), /PDF/)
+  assert.match(whyUnsupported('Deck.key'), /Export/)
+  assert.match(whyUnsupported('cat.png'), /not png/)
+})
+
+test('a corrupt deck explains itself instead of leaking the zip library error', () => {
+  // fflate throws "invalid zip data", which means nothing to a student.
+  const notAZip = strToU8('this is not a pptx')
+  assert.throws(() => pptxSlides(notAZip), /readable PowerPoint/)
+  assert.doesNotThrow(() => {
+    try { pptxSlides(notAZip) } catch (e) {
+      assert.ok(!/invalid zip/i.test((e as Error).message), 'raw library error leaked')
+    }
+  })
+})
+
+test('speaker notes are read — lecturers put real content there', () => {
+  const files: Record<string, Uint8Array> = { '[Content_Types].xml': strToU8('<Types/>') }
+  files['ppt/slides/slide1.xml'] = strToU8('<a:t>Core Operations</a:t>')
+  files['ppt/slides/_rels/slide1.xml.rels'] =
+    strToU8('<Relationships><Relationship Target="../notesSlides/notesSlide1.xml"/></Relationships>')
+  files['ppt/notesSlides/notesSlide1.xml'] = strToU8('<a:t>pop on an empty stack raises an error</a:t>')
+  const out = pptxSlides(zipSync(files))
+  assert.match(out[0], /Core Operations/)
+  assert.match(out[0], /Speaker notes: pop on an empty stack raises an error/)
+})
+
+test('a slide with no notes gets no empty notes heading', () => {
+  const files: Record<string, Uint8Array> = { 'ppt/slides/slide1.xml': strToU8('<a:t>Just a slide</a:t>') }
+  assert.equal(pptxSlides(zipSync(files))[0], 'Just a slide')
 })
 
 test('a slide deck is not silently swallowed by the PDF text threshold', () => {

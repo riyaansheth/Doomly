@@ -103,7 +103,7 @@ export default function SubjectPage({ params }: { params: Promise<{ id: string }
         <button>Add</button>
         <label className="file">
           Upload file
-          <input type="file" accept="application/pdf,.pdf,.pptx,.ppt,.xlsx,.xls" hidden
+          <input type="file" accept="application/pdf,.pdf,.pptx,.xlsx,.xls" hidden
             onChange={(e) => {
               const lvl = (e.target.form?.elements.namedItem('level') as HTMLSelectElement)?.value ?? '3'
               if (e.target.files?.[0] && user) uploadFile(db, user.id, subject.id, e.target.files[0], Number(lvl), setProgress)

@@ -8,6 +8,21 @@ import { pptxSlides, xlsxSheets } from '@/lib/office'
 const fail = (msg: string) => NextResponse.json({ error: msg }, { status: 500 })
 
 /**
+ * A document whose source can't be read will never make a card. Left in place it
+ * sits in the Material list forever showing "0 cards", with its upload orphaned
+ * in storage — Supabase won't let SQL remove storage objects, so the file has to
+ * go first, while the row still knows its path.
+ */
+async function discard(
+  db: Awaited<ReturnType<typeof serverClient>>,
+  doc: { id: string; storage_path: string | null; chunks_done: number },
+) {
+  if (doc.chunks_done > 0) return          // it produced cards; keep it
+  if (doc.storage_path) await db.storage.from('docs').remove([doc.storage_path])
+  await db.from('documents').delete().eq('id', doc.id)
+}
+
+/**
  * Processes EXACTLY ONE chunk per call and reports progress. The browser drives
  * the loop, so no request gets near a serverless timeout and there is no queue.
  * ponytail: browser-driven work loop. Move to a real queue when generation must
@@ -48,9 +63,15 @@ export async function POST(req: Request) {
         else pages = (await extractText(await getDocumentProxy(bytes), { mergePages: false })).text
       }
     } catch (e) {
+      // Nothing was extracted, so this document can never produce a card. Remove
+      // it instead of leaving a permanent 0-card row and an orphaned file.
+      await discard(db, doc)
       return fail((e as Error).message)
     }
-    if (!pages.length) return fail('Nothing readable in that source.')
+    if (!pages.length) {
+      await discard(db, doc)
+      return fail('Nothing readable in that source.')
+    }
 
     const total = isTopic ? pages.length : chunk(pages, shape).length
     const { error: pErr } = await db.from('documents')

@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import { isYouTube } from './youtube'
-import { kindOf } from './office'
+import { kindOf, whyUnsupported } from './office'
 
 export const LEVELS = [
   { value: 1, label: 'New to this' },
@@ -57,7 +57,7 @@ export async function uploadFile(
   db: SupabaseClient, userId: string, subjectId: string, file: File, level: number, say: Say,
 ) {
   const kind = kindOf(file.name)
-  if (!kind) return say(`Doomly can read PDFs, PowerPoint and Excel files — not ${file.name.split('.').pop()}.`)
+  if (!kind) return say(whyUnsupported(file.name))
 
   const { path, error } = await upload(db, userId, file, kind)
   if (error) return say(error.message)
